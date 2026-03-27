@@ -187,7 +187,112 @@
       window.location.reload();
     };
 
+    async function loadPricing() {
+      const grid = document.getElementById('pricing-grid');
+      const countrySpan = document.getElementById('detected-country');
+      try {
+        const res = await fetch(`${API_BASE}/auth/pricing`);
+        const plans = await res.json();
+        if (plans.length > 0) countrySpan.textContent = plans[0].country_code;
+        
+        const order = { 'free': 1, 'premium': 2, 'pro': 3 };
+        plans.sort((a, b) => (order[a.plan_type] || 99) - (order[b.plan_type] || 99));
+
+        grid.innerHTML = plans.map(p => {
+          let features = [];
+          if (p.plan_type === 'free') {
+            features = [
+              '✅ 3 séances guidées / jour',
+              '✅ Statistiques de base',
+              '✅ Routine "Bureau" incluse',
+              '✅ Rappels 20-20-20'
+            ];
+          } else if (p.plan_type === 'premium') {
+            features = [
+              '✅ Séances illimitées',
+              '✅ Accès complet à la bibliothèque',
+              '✅ Progression XP & Niveaux',
+              '✅ Thèmes immersifs exclusifs',
+              '✅ Audio spatial 8D',
+              '✅ Support standard'
+            ];
+          } else if (p.plan_type === 'pro') {
+            features = [
+              '✅ Tout du plan Premium',
+              '✅ Gestion d\'équipe (5 membres)',
+              '✅ Rapports mensuels PDF',
+              '✅ Score de Santé Oculaire IA',
+              '✅ Dashboard Master Entreprise',
+              '✅ Support prioritaire 24/7'
+            ];
+          }
+
+          return `
+            <div class="card-feature" style="border: 1px solid var(--border); position: relative; overflow: hidden; display: flex; flex-direction: column;">
+              ${p.plan_type === 'pro' ? '<div style="position:absolute; top:12px; right:-30px; background:var(--accent); color:white; padding:4px 40px; transform:rotate(45deg); font-size:0.6rem; font-weight:800;">POPULAIRE</div>' : ''}
+              <h3 style="margin-bottom:8px; font-size:1.1rem; text-transform:uppercase; letter-spacing:0.05em;">${p.plan_type}</h3>
+              <div style="font-size:2.5rem; font-weight:800; margin-bottom:12px;">${parseFloat(p.price) === 0 ? 'Gratuit' : p.price} <span style="font-size:1rem; color:var(--muted); font-weight:400;">${parseFloat(p.price) === 0 ? '' : p.currency + '/mois'}</span></div>
+              <ul style="list-style:none; padding:0; margin-bottom:24px; font-size:0.85rem; color:var(--muted); text-align:left; flex-grow: 1;">
+                ${features.map(f => `<li style="margin-bottom:8px;">${f}</li>`).join('')}
+              </ul>
+              <button onclick="handleSubscribe('${p.plan_type}')" class="btn ${p.plan_type === 'free' ? 'btn-ghost' : (p.plan_type === 'pro' ? 'btn-primary' : 'btn-ghost')}" style="width:100%;">${p.plan_type === 'free' ? 'Commencer' : 'Choisir ce plan'}</button>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        grid.innerHTML = '<p style="color:var(--danger);">Erreur lors du chargement des tarifs.</p>';
+      }
+    }
+
+    async function loadPartners() {
+      const list = document.getElementById('partners-list');
+      try {
+        const res = await fetch(`${API_BASE}/auth/partners/local`);
+        const partners = await res.json();
+        if (partners.length === 0) {
+          list.innerHTML = '<p style="font-size:0.8rem; color:var(--muted);">Devenez partenaire OcuFlow dans votre région.</p>';
+        } else {
+          list.innerHTML = partners.map(p => `
+            <div style="text-align:center; opacity:0.6; transition:0.3s; cursor:pointer;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="window.open('${p.website}', '_blank')">
+              <img src="${p.logo_url || 'https://via.placeholder.com/120x60?text='+p.name}" alt="${p.name}" style="height:40px; filter:grayscale(1) invert(1); margin-bottom:8px;">
+              <div style="font-size:0.6rem; font-weight:700;">${p.city}</div>
+            </div>
+          `).join('');
+        }
+      } catch (e) { console.warn("Partners fail", e); }
+    }
+
+    async function handleSubscribe(planType) {
+      const token = localStorage.getItem('ocuflow_token');
+      if (!token) {
+        window.location.href = `auth.html?redirect=checkout&plan=${planType}`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/payments/checkout`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ plan_type: planType })
+        });
+        const data = await res.json();
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          alert("Erreur lors de l'initiation du paiement.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Erreur serveur.");
+      }
+    }
+
     checkAuth();
+    loadPricing();
+    loadPartners();
   </script>
 </body>
 </html>

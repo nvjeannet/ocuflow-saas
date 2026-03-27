@@ -5,11 +5,57 @@ CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    xp INT DEFAULT 0,
+    level INT DEFAULT 1,
     is_premium BOOLEAN DEFAULT FALSE,
-    role VARCHAR(20) DEFAULT 'user',
+    plan_type ENUM('free', 'premium', 'pro') DEFAULT 'free',
+    role ENUM('user', 'admin') DEFAULT 'user',
+    parent_id INT NULL,
+    country_code VARCHAR(10) DEFAULT 'GA',
+    last_login DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL
+    FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+-- 1.2 Table des Tarifs par Pays
+CREATE TABLE IF NOT EXISTS pricing_rules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    country_code VARCHAR(10) NOT NULL,
+    plan_type ENUM('free', 'premium', 'pro') NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'XAF',
+    vat_rate DECIMAL(5, 2) DEFAULT 18.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 1.3 Table des Partenaires
+CREATE TABLE IF NOT EXISTS partners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    responsible_name VARCHAR(255),
+    city VARCHAR(100),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    website TEXT,
+    logo_url TEXT,
+    country_code VARCHAR(10) DEFAULT 'GA',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+ 
+ -- 1.1 Table des Clubs / Entreprises (PRO)
+ CREATE TABLE IF NOT EXISTS clubs (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     owner_id INT NOT NULL,
+     name VARCHAR(255) NOT NULL,
+     country_code VARCHAR(10),
+     city VARCHAR(100),
+     phone VARCHAR(50),
+     email VARCHAR(255),
+     logo_url TEXT,
+     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+ );
 
 -- 2. Table des Abonnements
 CREATE TABLE IF NOT EXISTS subscriptions (

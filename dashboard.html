@@ -48,6 +48,29 @@
         </div>
       </div>
     </nav>
+    <!-- Espace Premium / Upgrade -->
+    <div id="premium-upgrade-card" style="display:none; margin-top:24px; background:var(--gradient-vivid); border-radius:24px; padding:24px; color:white;">
+      <h3 style="font-size:1.1rem; margin-bottom:8px;">🚀 Libérez votre Gaz'lle</h3>
+      <p style="font-size:0.75rem; opacity:0.9; margin-bottom:16px;">Accédez aux routines avancées, aux stats illimitées et aux conseils personnalisés.</p>
+      
+      <!-- Choix Initial -->
+      <div id="upgrade-choice" style="display:grid; gap:8px;">
+        <button onclick="handleUpgrade('premium')" class="btn" style="background:white; color:var(--accent); width:100%; border:none; font-weight:800; font-size:0.75rem;">DEVENIR PREMIUM</button>
+        <button onclick="showProForm()" class="btn" style="background:rgba(255,255,255,0.1); color:white; width:100%; border:1px solid rgba(255,255,255,0.3); font-size:0.7rem;">PASSER EN ÉQUIPE (PRO)</button>
+      </div>
+
+      <!-- Formulaire PRO (caché par défaut) -->
+      <div id="pro-form" style="display:none; margin-top:16px; border-top:1px solid rgba(255,255,255,0.2); padding-top:16px;">
+        <h4 style="font-size:0.85rem; margin-bottom:12px;">Détails de l'Entreprise / Club</h4>
+        <input type="text" id="pro-club-name" placeholder="Nom de l'organisation" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
+        <input type="text" id="pro-city" placeholder="Ville" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
+        <input type="text" id="pro-phone" placeholder="Téléphone" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
+        <input type="text" id="pro-logo" placeholder="URL du Logo (Optionnel)" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
+        <button onclick="handleUpgrade('pro')" class="btn" style="background:white; color:var(--accent); width:100%; border:none; font-weight:800; font-size:0.75rem; margin-top:8px;">PROCÉDER AU PAIEMENT</button>
+        <button onclick="hideProForm()" style="background:none; border:none; color:white; font-size:0.6rem; margin-top:8px; cursor:pointer; opacity:0.7; width:100%;">Retour</button>
+      </div>
+    </div>
+
     <!-- Espace Avis -->
       <div class="card" style="margin-top:24px;background:rgba(255,255,255,0.02);">
         <h3 style="font-size:1rem;margin-bottom:12px;">📣 Votre avis compte</h3>
@@ -715,8 +738,61 @@
       window.location.href = 'index.html';
     };
 
+    window.showProForm = () => {
+      document.getElementById('upgrade-choice').style.display = 'none';
+      document.getElementById('pro-form').style.display = 'block';
+    };
+
+    window.hideProForm = () => {
+      document.getElementById('upgrade-choice').style.display = 'grid';
+      document.getElementById('pro-form').style.display = 'none';
+    };
+
+    async function handleUpgrade(planType) {
+      const token = localStorage.getItem('ocuflow_token');
+      
+      const body = { plan_type: planType };
+      if (planType === 'pro') {
+        body.club_name = document.getElementById('pro-club-name').value;
+        body.city = document.getElementById('pro-city').value;
+        body.phone = document.getElementById('pro-phone').value;
+        body.logo_url = document.getElementById('pro-logo').value;
+        if (!body.club_name) return alert("Veuillez saisir le nom de votre club/entreprise.");
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/payments/checkout`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.checkout_url) window.location.href = data.checkout_url;
+        else alert("Erreur lors de l'initiation du paiement.");
+      } catch(e) { console.error(e); }
+    }
+
+    function checkPaymentStatus() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('payment') === 'success') {
+        alert("Félicitations ! Votre abonnement est activé. Profitez bien d'OcuFlow Premium !");
+        // Refetch user data to update is_premium status locally
+        // (In a real app, the token should be refreshed or the status fetched)
+      } else if (urlParams.get('payment') === 'cancel') {
+        alert("Le paiement a été annulé.");
+      }
+    }
+
     try {
       initDashboard();
+      checkPaymentStatus();
+      const user = JSON.parse(localStorage.getItem('ocuflow_user'));
+      if (user && !user.is_premium) {
+        document.getElementById('premium-upgrade-card').style.display = 'block';
+      }
       console.log("Dashboard initialized successfully.");
     } catch(e) {
       console.error("Dashboard init error:", e);

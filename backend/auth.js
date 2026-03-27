@@ -26,7 +26,7 @@ router.post('/register', async (req, res) => {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    const country = req.country || 'FR';
+    const country = req.country || 'GA';
     const insertResult = await db.query(
       'INSERT INTO users (email, password_hash, country_code) VALUES (?, ?, ?)',
       [email, passwordHash, country]
@@ -142,7 +142,7 @@ router.post('/reset-password', async (req, res) => {
 
 // OBTENIR LES PARTENAIRES LOCAUX
 router.get('/partners/local', async (req, res) => {
-  const country = req.country || 'FR';
+  const country = req.country || 'GA';
   try {
     const result = await db.query('SELECT name, city, logo_url, website FROM partners WHERE country_code = ? AND is_active = TRUE', [country]);
     res.json(result.rows);
@@ -163,12 +163,12 @@ router.get('/testimonials/approved', async (req, res) => {
 
 // OBTENIR LES TARIFS SELON LE PAYS DÉTECTÉ
 router.get('/pricing', async (req, res) => {
-  const country = req.country || 'FR';
+  const country = req.country || 'GA';
   try {
     const result = await db.query('SELECT * FROM pricing_rules WHERE country_code = ?', [country]);
     // Si pas de prix spécifique pour ce pays, on renvoie les prix par défaut (FR)
     if (result.rows.length === 0) {
-      const fallback = await db.query('SELECT * FROM pricing_rules WHERE country_code = \'FR\'');
+      const fallback = await db.query('SELECT * FROM pricing_rules WHERE country_code = \'GA\'');
       return res.json(fallback.rows);
     }
     res.json(result.rows);
@@ -180,7 +180,7 @@ router.get('/pricing', async (req, res) => {
 // CONNEXION
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  const country = req.country || 'FR';
+  const country = req.country || 'GA';
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email et mot de passe requis.' });

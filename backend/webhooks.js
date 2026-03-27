@@ -26,33 +26,54 @@ router.post('/moneroo', express.raw({ type: 'application/json' }), async (req, r
 
   // 2. Traitement de l'événement
   if (event.event === 'payment.success') {
-    const { reference, customer, amount, currency } = event.data;
-    const email = customer.email;
+    const { reference, customer, amount, currency, metadata } = event.data;
+    const userId = metadata?.user_id;
+    const planType = metadata?.plan_type || 'premium';
 
     try {
-      // Trouver l'utilisateur
-      const userRes = await db.query('SELECT id FROM users WHERE email = ?', [email]);
-      if (userRes.rows.length > 0) {
-        const userId = userRes.rows[0].id;
+      // 1. Mettre à jour le statut Premium de l'utilisateur
+      await db.query(
+        'UPDATE users SET is_premium = true, plan_type = ? WHERE id = ?',
+        [planType, userId]
+      );
 
-        // Mettre à jour le statut Premium
-        await db.query('UPDATE users SET is_premium = true WHERE id = ?', [userId]);
+      // 2. Calculer les dates (1 mois d'abonnement)
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
 
-        // Créer l'enregistrement de souscription
-        const startDate = new Date();
-        const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 1); // Par défaut 1 mois
+      // 3. Créer ou mettre à jour la souscription
+      await db.query(
+        'INSERT INTO subscriptions (user_id, moneroo_ref, amount, currency, status, plan_type, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, reference, amount / 100, currency, 'active', planType, startDate, endDate]
+      );
 
+      // 4. Si c'est un compte PRO, créer l'entrée dans la table 'clubs'
+      if (planType === 'pro') {
         await db.query(
-          'INSERT INTO subscriptions (user_id, moneroo_ref, amount, currency, status, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [userId, reference, amount / 100, currency, 'active', startDate, endDate]
+          'INSERT INTO clubs (owner_id, name, country_code, city, phone, email, logo_url) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            userId, 
+            metadata.club_name || 'Club Sans Nom', 
+            req.country || 'GA', 
+            metadata.city || '', 
+            metadata.phone || '', 
+            customer.email, 
+            metadata.logo_url || ''
+          ]
         );
-
-        console.log(`Abonnement activé pour ${email}`);
       }
+
+      // 5. Loguer l'action admin (Audit)
+      await db.query(
+        'INSERT INTO admin_logs (action, details) VALUES (?, ?)',
+        ['PAYMENT_SUCCESS', JSON.stringify({ userId, reference, planType, amount: amount/100 })]
+      );
+
+      console.log(`✅ Abonnement ${planType} activé pour l'utilisateur ID: ${userId}`);
     } catch (err) {
-      console.error('Erreur lors du traitement du webhook :', err);
-      return res.status(500).send('Internal Server Error');
+      console.error('❌ Erreur Webhook Processing:', err);
+      return res.status(500).send('Error');
     }
   }
 
