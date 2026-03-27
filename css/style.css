@@ -252,3 +252,118 @@ input:checked + .toggle-slider:before { transform: translateX(18px); }
 @media (max-width: 768px) {
   .hero h1 { font-size: 2.8rem; }
 }
+
+/* ══ DASHBOARD REDESIGN (SIDEBAR + TABS) ═════════════════════════════════════ */
+.dashboard-wrapper {
+  display: flex;
+  min-height: calc(100vh - var(--header-h));
+  gap: 0;
+  background: var(--bg);
+}
+
+.dashboard-sidebar {
+  width: 280px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 32px 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: var(--trans);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+}
+
+.sidebar-item.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-light);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.sidebar-item i {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--header-h));
+}
+
+.tab-pane {
+  display: none;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Compact member rows for Enterprise */
+.member-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 8px;
+  transition: var(--trans);
+}
+
+.member-row:hover {
+  border-color: var(--accent-light);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--gradient-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: white;
+  font-size: 0.9rem;
+}

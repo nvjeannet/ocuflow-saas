@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/core.js"></script>
   <style>
     select { background-color: var(--panel) !important; color: var(--text) !important; }
     option { background-color: var(--panel); color: var(--text); }
@@ -28,7 +29,6 @@
     .ergo-card i { font-size: 1.8rem; width: 40px; text-align: center; }
     .ergo-card h4 { font-size: 0.95rem; font-weight: 800; color: white; margin-bottom: 4px; }
     .ergo-card p { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
-    .ergo-card.highlight { border: 2px solid var(--accent); background: rgba(59, 130, 246, 0.08); }
 
     .xp-container { margin-top: 12px; width: 240px; }
     .xp-header { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
@@ -37,390 +37,229 @@
     .level-badge { background: var(--gradient-vivid); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 800; margin-left: 8px; vertical-align: middle; }
   </style>
 </head>
-<body>
-  <div class="page-container">
-    <nav>
-      <div class="logo" onclick="window.location.href='index.html'" style="cursor:pointer;">Ocu<span>Flow</span><div class="logo-slogan">La Gymnastique Oculaire</div></div>
-      <div id="nav-actions" style="display:flex;align-items:center;gap:24px;">
-        <div id="user-pill" style="display:flex;align-items:center;gap:16px;">
-          <span id="user-email-pill" style="font-size:.75rem;color:var(--muted);font-weight:500;"></span>
-          <button id="logout-btn" style="background:transparent;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;">✕</button>
-        </div>
-      </div>
-    </nav>
-    <!-- Espace Premium / Upgrade -->
-    <div id="premium-upgrade-card" style="display:none; margin-top:24px; background:var(--gradient-vivid); border-radius:24px; padding:24px; color:white;">
-      <h3 style="font-size:1.1rem; margin-bottom:8px;">🚀 Libérez votre Gaz'lle</h3>
-      <p style="font-size:0.75rem; opacity:0.9; margin-bottom:16px;">Accédez aux routines avancées, aux stats illimitées et aux conseils personnalisés.</p>
-      
-      <!-- Choix Initial -->
-      <div id="upgrade-choice" style="display:grid; gap:8px;">
-        <button onclick="handleUpgrade('premium')" class="btn" style="background:white; color:var(--accent); width:100%; border:none; font-weight:800; font-size:0.75rem;">DEVENIR PREMIUM</button>
-        <button onclick="showProForm()" class="btn" style="background:rgba(255,255,255,0.1); color:white; width:100%; border:1px solid rgba(255,255,255,0.3); font-size:0.7rem;">PASSER EN ÉQUIPE (PRO)</button>
-      </div>
-
-      <!-- Formulaire PRO (caché par défaut) -->
-      <div id="pro-form" style="display:none; margin-top:16px; border-top:1px solid rgba(255,255,255,0.2); padding-top:16px;">
-        <h4 style="font-size:0.85rem; margin-bottom:12px;">Détails de l'Entreprise / Club</h4>
-        <input type="text" id="pro-club-name" placeholder="Nom de l'organisation" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
-        <input type="text" id="pro-city" placeholder="Ville" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
-        <input type="text" id="pro-phone" placeholder="Téléphone" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
-        <input type="text" id="pro-logo" placeholder="URL du Logo (Optionnel)" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.8rem;">
-        <button onclick="handleUpgrade('pro')" class="btn" style="background:white; color:var(--accent); width:100%; border:none; font-weight:800; font-size:0.75rem; margin-top:8px;">PROCÉDER AU PAIEMENT</button>
-        <button onclick="hideProForm()" style="background:none; border:none; color:white; font-size:0.6rem; margin-top:8px; cursor:pointer; opacity:0.7; width:100%;">Retour</button>
+<body class="theme-dark">
+  <nav>
+    <div class="logo" onclick="window.location.href='index.html'" style="cursor:pointer;">Ocu<span>Flow</span><div class="logo-slogan">La Gymnastique Oculaire</div></div>
+    <div id="nav-actions" style="display:flex;align-items:center;gap:24px;">
+      <div id="user-pill" style="display:flex;align-items:center;gap:16px;">
+        <span id="user-email-pill" style="font-size:.75rem;color:var(--muted);font-weight:500;"></span>
+        <button id="logout-btn" style="background:transparent;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;">✕</button>
       </div>
     </div>
+  </nav>
 
-    <!-- Espace Avis -->
-      <div class="card" style="margin-top:24px;background:rgba(255,255,255,0.02);">
-        <h3 style="font-size:1rem;margin-bottom:12px;">📣 Votre avis compte</h3>
-        <p style="font-size:0.75rem;color:var(--muted);margin-bottom:16px;">Partagez votre expérience OcuFlow avec la communauté.</p>
-        <textarea id="testimonial-text" placeholder="Comment OcuFlow a-t-il amélioré votre quotidien ?" style="width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:12px;padding:12px;color:white;font-size:0.8rem;resize:none;height:80px;"></textarea>
-        <button onclick="submitTestimonial()" class="btn btn-ghost" style="width:100%;margin-top:12px;font-size:0.75rem;">Envoyer mon témoignage</button>
+  <div class="dashboard-wrapper">
+    <!-- Sidebar Nav -->
+    <aside class="dashboard-sidebar" id="dashboard-sidebar" style="display:none;">
+      <ul class="sidebar-nav">
+        <li class="sidebar-item active" onclick="switchTab('focus')" id="nav-focus">
+          <i>🎯</i> Mon Focus
+        </li>
+        <li class="sidebar-item" onclick="switchTab('team')" id="nav-team" style="display:none;">
+          <i>👥</i> Mon Équipe
+        </li>
+        <li class="sidebar-item" onclick="switchTab('reports')" id="nav-reports">
+          <i>📊</i> Santé & Rapports
+        </li>
+        <li class="sidebar-item" onclick="switchTab('settings')" id="nav-settings">
+          <i>⚙️</i> Réglages
+        </li>
+      </ul>
+
+      <div id="premium-sidebar-card" style="display:none; margin-top:auto; background:var(--gradient-vivid); border-radius:18px; padding:16px; color:white;">
+        <h4 style="font-size:0.8rem; margin-bottom:4px;">🚀 OcuFlow PRO</h4>
+        <p style="font-size:0.65rem; opacity:0.9; margin-bottom:12px;">Gérez votre équipe et accédez aux analyses avancées.</p>
+        <button onclick="window.location.href='index.html#pricing'" class="btn" style="background:white; color:var(--accent); width:100%; border:none; padding:8px; font-size:0.7rem; border-radius:10px;">DÉCOUVRIR</button>
+      </div>
+
+      <!-- Testimonial card -->
+      <div class="card" style="margin-top:24px;background:rgba(255,255,255,0.02); padding:16px; border-radius:14px; border:1px solid var(--border);">
+        <h3 style="font-size:0.8rem;margin-bottom:8px;">📣 Votre avis</h3>
+        <textarea id="testimonial-text" placeholder="Mon avis..." style="width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border);border-radius:10px;padding:8px;color:white;font-size:0.7rem;resize:none;height:60px;"></textarea>
+        <button onclick="submitTestimonial()" class="btn btn-ghost" style="width:100%;margin-top:8px;padding:6px;font-size:0.65rem;border-radius:8px;">Envoyer</button>
       </div>
     </aside>
-  </main>
 
-    <section id="dashboard-section" style="padding:40px 0;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:20px;">
-          <div>
-            <h2 style="font-size:2rem;margin-bottom:8px;"><span id="welcome-text"></span> <span id="user-display-name" style="color:var(--accent-light);">Oculiste</span> <span id="user-level" class="level-badge">LVL 1</span> 👋</h2>
-            <p id="ready-text" style="color:var(--muted);font-size:0.9rem;"></p>
-            <div class="xp-container">
-              <div class="xp-header">
-                <span>Progression XP</span>
-                <span id="xp-text">0 / 100</span>
+    <main class="dashboard-content">
+      <!-- Tab: Mon Focus -->
+      <div id="tab-focus" class="tab-pane active">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;flex-wrap:wrap;gap:20px;">
+            <div>
+              <h2 style="font-size:2rem;margin-bottom:8px;"><span id="welcome-text"></span> <span id="user-display-name" style="color:var(--accent-light);">Oculiste</span> <span id="user-level" class="level-badge">LVL 1</span> 👋</h2>
+              <p id="ready-text" style="color:var(--muted);font-size:0.9rem;"></p>
+              <div class="xp-container">
+                <div class="xp-header">
+                  <span>Progression XP</span>
+                  <span id="xp-text">0 / 100</span>
+                </div>
+                <div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div>
               </div>
-              <div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <a href="config.html" class="btn btn-primary" id="btn-routine">Lancer Routine</a>
+              <a href="config.html?mode=free" class="btn btn-ghost" id="btn-free">Mode Libre</a>
             </div>
           </div>
-          <div style="display:flex;gap:12px;">
-            <a href="config.html" class="btn btn-primary" id="btn-routine"></a>
-            <a href="config.html?mode=free" class="btn btn-ghost" id="btn-free"></a>
+          
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:40px;">
+            <div class="stat-card"><span class="stat-val" id="stat-streak">0</span><span class="stat-label" id="label-streak">🔥 Série</span></div>
+            <div class="stat-card"><span class="stat-val" id="stat-total-min">0</span><span class="stat-label" id="label-minutes">⏳ Minutes</span></div>
+            <div class="stat-card"><span class="stat-val" id="stat-badges-count">0</span><span class="stat-label" id="label-badges">🏆 Badges</span></div>
+            <div class="stat-card" style="background:var(--gradient-primary);border:none;"><span class="stat-val" id="stat-health-score" style="color:white;">0%</span><span class="stat-label" style="color:rgba(255,255,255,0.8);">🛡️ Santé Oculaire</span></div>
+          </div>
+
+          <div style="margin-bottom:40px;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:24px;">
+            <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px;">Activité Hebdomadaire</h4>
+            <div style="height:200px;width:100%;"><canvas id="activityChart"></canvas></div>
+          </div>
+
+          <div style="margin-bottom:40px;">
+            <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;">Vos Badges</h4>
+            <div class="badges-row" id="dashboard-badges"></div>
+          </div>
+
+          <!-- Free Upgrade Card -->
+          <div id="premium-upgrade-card" style="display:none; margin-bottom:40px; background:var(--gradient-primary); border-radius:24px; padding:32px; color:white;">
+            <h3 style="margin-bottom:8px;">Passez à l'étape supérieure 🚀</h3>
+            <p style="margin-bottom:20px; opacity:0.9;">Débloquez toutes les routines, les analyses avancées et supprimez les limites.</p>
+            <button onclick="window.location.href='index.html#pricing'" class="btn" style="background:white; color:var(--accent); border:none;">Voir les plans</button>
           </div>
         </div>
-        
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:40px;">
-          <div class="stat-card">
-            <span class="stat-val" id="stat-streak">0</span>
-            <span class="stat-label" id="label-streak">🔥 </span>
+      </div>
+
+      <!-- Tab: Mon Équipe (PRO Only) -->
+      <div id="tab-team" class="tab-pane">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
+            <h2 style="font-size:2rem;">👥 Gestion de l'Équipe</h2>
+            <button class="btn btn-primary" onclick="showAddMemberModal()">+ Ajouter un membre</button>
           </div>
-          <div class="stat-card">
-            <span class="stat-val" id="stat-total-min">0</span>
-            <span class="stat-label" id="label-minutes">⏳ </span>
+          
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:40px;">
+            <div class="stat-card"><span class="stat-val" id="team-total-members">0</span><span class="stat-label">Membres Actifs</span></div>
+            <div class="stat-card"><span class="stat-val" id="team-total-sessions">0</span><span class="stat-label">Séances ce mois</span></div>
+            <div class="stat-card"><span class="stat-val" id="team-avg-health">0%</span><span class="stat-label">Santé Moyenne</span></div>
           </div>
-          <div class="stat-card">
-            <span class="stat-val" id="stat-badges-count">0</span>
-            <span class="stat-label" id="label-badges">🏆 </span>
-          </div>
-          <div class="stat-card" style="background:var(--gradient-primary);border:none;">
-            <span class="stat-val" id="stat-health-score" style="color:white;">0%</span>
-            <span class="stat-label" style="color:rgba(255,255,255,0.8);">🛡️ Santé Oculaire</span>
+
+          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px;">Liste des Collaborateurs</h4>
+          <div id="team-members-list-new" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Santé & Rapports -->
+      <div id="tab-reports" class="tab-pane">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
+          <h2 style="font-size:2rem;margin-bottom:32px;">📊 Santé & Rapports</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:40px;">
+            <div class="card-feature" onclick="window.location.href='tests.html'" style="cursor:pointer;"><i>👁️</i><h3>Bilan de Santé IA</h3><p>Analysez votre fatigue visuelle.</p></div>
+            <div class="card-feature" onclick="exportPDF()" style="cursor:pointer;"><i>📄</i><h3>Rapport PDF</h3><p>Générez un bilan complet.</p></div>
           </div>
         </div>
+      </div>
 
-        <div style="margin-bottom:40px;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:24px;">
-          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px;">Activité Hebdomadaire</h4>
-          <div style="height:200px;width:100%;">
-            <canvas id="activityChart"></canvas>
-          </div>
-        </div>
-
-        <div style="margin-bottom:40px;">
-          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;">Vos Badges</h4>
-          <div class="badges-row" id="dashboard-badges">
-            <!-- Badges injected via JS -->
-          </div>
-        </div>
-
-        <div style="margin-bottom:40px;background:rgba(59,130,246,0.05);padding:25px;border-radius:24px;border:1px solid rgba(59,130,246,0.1);display:flex;gap:20px;align-items:center;">
-          <div style="font-size:2rem;">💡</div>
-          <div>
-            <h4 style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:4px;" id="label-tip-day">Conseil du Jour</h4>
-            <p id="dashboard-tip" style="font-size:0.9rem;color:var(--text);line-height:1.4;font-weight:500;"></p>
-          </div>
-        </div>
-
-        <div style="margin-bottom:40px;">
-          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;">Conseils d'Ergonomie</h4>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px, 1fr));gap:16px;">
-            <div class="ergo-card">
-              <i>📏</i>
-              <div>
-                <h4>Distance Idéale</h4>
-                <p>Gardez l'écran à 50-70 cm de vos yeux (une longueur de bras).</p>
-              </div>
-            </div>
-            <div class="ergo-card">
-              <i>🖥️</i>
-              <div>
-                <h4>Hauteur du Regard</h4>
-                <p>Le haut de l'écran doit être au niveau de vos yeux.</p>
-              </div>
-            </div>
-            <div class="ergo-card">
-              <i>💡</i>
-              <div>
-                <h4>Éclairage Doux</h4>
-                <p>Évitez les reflets et préférez une lumière d'ambiance tamisée.</p>
-              </div>
-            </div>
-            <div class="ergo-card">
-              <i>🧘</i>
-              <div>
-                <h4>Posture du Dos</h4>
-                <p>Dos droit, pieds à plat. Ne vous penchez pas vers l'écran.</p>
-              </div>
-            </div>
-            <div class="ergo-card">
-              <i>✨</i>
-              <div>
-                <h4>Clignez des Yeux</h4>
-                <p>Devant un écran, on oublie de cligner. Faites-le consciemment !</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-bottom:40px;">
-          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;">Défi du Mois</h4>
-          <div style="background:var(--gradient-vivid);border-radius:24px;padding:30px;color:white;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden;">
-            <div style="position:relative;z-index:1;">
-              <h3 style="font-size:1.5rem;margin-bottom:8px;">🎯 Marathon Focus</h3>
-              <p style="font-size:0.9rem;opacity:0.9;margin-bottom:16px;">Complétez 15 séances ce mois-ci pour débloquer le badge "Marathonien".</p>
-              <div style="display:flex;align-items:center;gap:15px;">
-                <div style="flex:1;height:8px;background:rgba(255,255,255,0.2);border-radius:4px;width:200px;"><div id="challenge-fill" style="height:100%;background:white;width:0%;border-radius:4px;"></div></div>
-                <span id="challenge-text" style="font-weight:800;font-size:0.8rem;">0/15</span>
-              </div>
-            </div>
-            <div style="font-size:4rem;opacity:0.2;position:absolute;right:-10px;bottom:-10px;">🏆</div>
-          </div>
-        </div>
-
-        <div style="margin-bottom:40px;">
-          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px;">💎 Espace PRO</h4>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-            <div class="ergo-card" style="cursor:pointer;" onclick="window.location.href='tests.html'">
-              <i>👁️</i>
-              <div>
-                <h4>Bilan de Santé</h4>
-                <p>Testez votre fatigue visuelle et demandez un diagnostic IA.</p>
-              </div>
-            </div>
-            <div class="ergo-card" style="cursor:pointer;" onclick="exportPDF()">
-              <i>📄</i>
-              <div>
-                <h4>Rapport Mensuel</h4>
-                <p>Générez un bilan PDF complet de votre activité oculaire.</p>
-              </div>
-            </div>
-            <div id="pro-only-team" class="ergo-card" style="cursor:pointer;display:none;" onclick="toggleTeamPanel()">
-              <i>👥</i>
-              <div>
-                <h4>Gestion de l'Équipe</h4>
-                <p>Ajoutez jusqu'à 5 membres à votre abonnement PRO.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Team Panel (Hidden by default) -->
-        <div id="team-panel" style="display:none;margin-bottom:40px;background:var(--surface);border:1px solid var(--accent);border-radius:24px;padding:30px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <h3 style="font-size:1.1rem;">Membres de votre Équipe</h3>
-            <button class="btn btn-ghost" onclick="toggleTeamPanel()" style="padding:4px 12px;font-size:0.75rem;">Fermer</button>
-          </div>
-          <div id="team-members-list" style="margin-bottom:24px;">
-            <!-- Members list -->
-          </div>
-          <div style="background:rgba(255,255,255,0.03);padding:20px;border-radius:18px;">
-            <h4 style="font-size:0.8rem;margin-bottom:12px;">Ajouter un membre</h4>
-            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;">
-              <input type="email" id="new-member-email" placeholder="Email" class="btn btn-ghost" style="text-align:left;font-size:0.8rem;">
-              <input type="password" id="new-member-pass" placeholder="Mot de passe" class="btn btn-ghost" style="text-align:left;font-size:0.8rem;">
-              <button class="btn btn-primary" onclick="addTeamMember()" style="font-size:0.8rem;">Ajouter</button>
-            </div>
-          </div>
-        </div>
-
-        <div style="border-top:1px solid var(--border);padding-top:40px;">
-          <h3 style="font-size:1.2rem;margin-bottom:24px;">Réglages & Immersion</h3>
+      <!-- Tab: Réglages -->
+      <div id="tab-settings" class="tab-pane">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
+          <h2 style="font-size:2rem;margin-bottom:32px;">⚙️ Réglages</h2>
+          
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
             <div class="stat-card" style="text-align:left;padding:20px;">
               <span class="stat-label" style="margin-top:0;margin-bottom:12px;">🎨 Thème Visuel</span>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                <button class="btn btn-ghost theme-btn active" data-theme="dark">Espace</button>
+                <button class="btn btn-ghost theme-btn" data-theme="dark">Espace</button>
                 <button class="btn btn-ghost theme-btn" data-theme="forest">Forêt</button>
                 <button class="btn btn-ghost theme-btn" data-theme="sepia">Sépia</button>
-                <button class="btn btn-ghost theme-btn" data-theme="high-contrast">Contraste</button>
               </div>
             </div>
             <div class="stat-card" style="text-align:left;padding:20px;">
-              <span class="stat-label" style="margin-top:0;margin-bottom:12px;">🎭 Immersion & Audio</span>
-              <div class="control-row" style="margin-bottom:12px;">
-                <span class="control-label">Ambiance 8D</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="ambiance-toggle">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              <div id="ambiance-options" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-                <button class="btn btn-ghost amb-btn" data-amb="zen">✨ Zen</button>
-                <button class="btn btn-ghost amb-btn" data-amb="rain">🌧️ Pluie</button>
-                <button class="btn btn-ghost amb-btn" data-amb="ocean">🌊 Océan</button>
-                <button class="btn btn-ghost amb-btn" data-amb="forest">🌲 Forêt</button>
-                <button class="btn btn-ghost amb-btn" data-amb="binaural" style="grid-column: span 2;">🧠 Binaural (Méditation)</button>
-              </div>
-              <div class="control-row">
-                <span class="control-label">Effet Spatial (8D)</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="spatial-toggle">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-            </div>
-            <div class="stat-card" style="text-align:left;padding:20px;grid-column: span 1;">
-              <span class="stat-label" style="margin-top:0;margin-bottom:12px;">🔔 Centre de Rappels</span>
-              <div class="control-row" style="margin-bottom:15px;">
-                <span class="control-label">Activer les rappels</span>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="reminder-master-toggle">
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              
-              <div id="reminder-config" style="display:none;border-top:1px solid var(--border);padding-top:15px;margin-top:10px;">
-                <select id="reminder-type" class="btn btn-ghost" style="width:100%;text-align:left;margin-bottom:12px;font-size:0.75rem;">
-                  <option value="interval">Intervalle Régulier</option>
-                  <option value="fixed">Heures Fixes</option>
-                  <option value="goal">Objectif Quotidien</option>
-                </select>
-
-                <div id="config-interval" class="rem-config-sub">
-                  <div class="control-row">
-                    <span class="control-label">Fréquence</span>
-                    <span id="rem-interval-val" class="control-val">20 min</span>
-                  </div>
-                  <input type="range" id="rem-interval-slider" min="5" max="120" step="5" value="20" style="margin-top:5px;">
-                </div>
-
-                <div id="config-fixed" class="rem-config-sub" style="display:none;">
-                  <div id="fixed-times-list" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;"></div>
-                  <input type="time" id="add-time-input" class="btn btn-ghost" style="width:100%;font-size:0.7rem;padding:8px;">
-                </div>
-
-                <div id="config-goal" class="rem-config-sub" style="display:none;">
-                  <div class="control-row">
-                    <span class="control-label">Séances par jour</span>
-                    <span id="rem-goal-val" class="control-val">3</span>
-                  </div>
-                  <input type="range" id="rem-goal-slider" min="1" max="10" step="1" value="3" style="margin-top:5px;">
-                </div>
-
-                <div class="control-row" style="margin-top:15px;border-top:1px solid var(--border);padding-top:12px;">
-                  <span class="control-label">Notifications Push</span>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="push-toggle">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
+              <span class="stat-label" style="margin-top:0;margin-bottom:12px;">🎭 Audio</span>
+              <div class="control-row"><span class="control-label">Ambiance Audio</span><label class="toggle-switch"><input type="checkbox" id="ambiance-toggle"><span class="toggle-slider"></span></label></div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </main>
   </div>
 
-  <script src="js/core.js"></script>
+  <!-- Modal: Ajouter un membre -->
+  <div id="add-member-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:32px; width:400px; max-width:90%;">
+      <h3 style="margin-bottom:20px;">Ajouter un collaborateur</h3>
+      <input type="email" id="modal-member-email" placeholder="Email" class="btn btn-ghost" style="width:100%; text-align:left; margin-bottom:12px;">
+      <input type="password" id="modal-member-pass" placeholder="Mot de passe" class="btn btn-ghost" style="width:100%; text-align:left; margin-bottom:20px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <button class="btn btn-ghost" onclick="hideAddMemberModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="addTeamMemberModal()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     StorageManager.init();
-    
-    function initDashboard() {
-      const user = JSON.parse(localStorage.getItem('ocuflow_user'));
-      const token = localStorage.getItem('ocuflow_token');
 
-      if (!user || !token) {
-        window.location.href = 'auth.html';
-        return;
-      }
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.getElementById('nav-' + tabId).classList.add('active');
+      if (tabId === 'team') loadTeamMembers();
+    }
+
+    async function initDashboard() {
+      const user = JSON.parse(localStorage.getItem('ocuflow_user'));
+      if (!user) { window.location.href = 'auth.html'; return; }
 
       document.getElementById('user-email-pill').textContent = user.email;
       document.getElementById('user-display-name').textContent = user.username || user.email.split('@')[0];
       
-      // PRO specific visibility
-      if (user.plan_type === 'pro' && !user.parent_id) {
-        document.getElementById('pro-only-team').style.display = 'flex';
+      const isProMaster = user.plan_type === 'pro' && !user.parent_id;
+      if (isProMaster) {
+        document.getElementById('dashboard-sidebar').style.display = 'flex';
+        document.getElementById('nav-team').style.display = 'flex';
+      } else if (user.plan_type !== 'free') {
+        document.getElementById('dashboard-sidebar').style.display = 'flex';
+      } else {
+        document.getElementById('dashboard-sidebar').style.display = 'flex';
+        document.getElementById('premium-upgrade-card').style.display = 'block';
       }
 
-      // Bilingual texts
       document.getElementById('welcome-text').textContent = getT('welcome');
-      document.getElementById('ready-text').textContent = StorageManager.data.lang === 'fr' ? 'Prêt pour votre séance ?' : 'Ready for your session?';
-      document.getElementById('btn-routine').textContent = getT('start_routine');
-      document.getElementById('btn-free').textContent = getT('free_mode');
-      document.getElementById('label-streak').textContent = '🔥 ' + getT('streak');
-      document.getElementById('label-minutes').textContent = '⏳ ' + getT('minutes');
-      document.getElementById('label-badges').textContent = '🏆 ' + getT('badges');
-      document.getElementById('label-tip-day').textContent = StorageManager.data.lang === 'fr' ? 'Conseil du Jour' : 'Tip of the Day';
-
-      const tips = [
-        "Clignez des yeux régulièrement pour maintenir une bonne hydratation naturelle.",
-        "La règle 20-20-20 : toutes les 20 minutes, fixez un point au loin pendant 20 secondes.",
-        "Assurez-vous d'avoir un éclairage suffisant, idéalement sans reflets directs sur votre écran.",
-        "Gardez votre dos droit et vos pieds à plat au sol pour une circulation optimale.",
-        "Respirez profondément et relâchez vos épaules pour détendre tout le système visuel.",
-        "Le palmage (couvrir les yeux avec les mains) est idéal pour reposer la rétine."
-      ];
-      document.getElementById('dashboard-tip').textContent = tips[Math.floor(Math.random() * tips.length)];
-
       renderStats();
       renderActivityChart();
-      initSettings();
+      initSettingsUI();
     }
 
     function renderStats() {
       const data = StorageManager.data;
       document.getElementById('stat-streak').textContent = data.streak;
-      document.getElementById('stat-total-min').textContent = Math.round(data.sessions.reduce((a,b)=>a+b.dur || b.duration, 0)/60);
+      document.getElementById('stat-total-min').textContent = Math.round(data.sessions.reduce((a,b)=>a+(b.dur || b.duration || 0), 0)/60);
       document.getElementById('stat-badges-count').textContent = data.unlockedBadges.length;
       document.getElementById('stat-health-score').textContent = StorageManager.getEyeHealthScore() + '%';
-
-      // Level & XP
       document.getElementById('user-level').textContent = 'LVL ' + (data.level || 1);
-      const currentXP = data.xp || 0;
+      
       const nextLevelXP = Math.pow(data.level || 1, 2) * 100;
       const prevLevelXP = Math.pow((data.level || 1) - 1, 2) * 100;
-      const progress = ((currentXP - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100;
-      
-      document.getElementById('xp-text').textContent = `${currentXP} / ${nextLevelXP} XP`;
+      const progress = ((data.xp - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100;
+      document.getElementById('xp-text').textContent = `${data.xp} / ${nextLevelXP} XP`;
       document.getElementById('xp-fill').style.width = Math.min(progress, 100) + '%';
 
-      // Challenge progress
-      const currentMonth = new Date().getMonth();
-      const monthSessions = data.sessions.filter(s => new Date(s.timestamp || s.date).getMonth() === currentMonth).length;
-      const challengeGoal = 15;
-      const chalPerc = Math.min((monthSessions / challengeGoal) * 100, 100);
-      document.getElementById('challenge-fill').style.width = chalPerc + '%';
-      document.getElementById('challenge-text').textContent = `${monthSessions}/${challengeGoal}`;
-
+      // Badges
       const badgeContainer = document.getElementById('dashboard-badges');
       badgeContainer.innerHTML = '';
       BADGES.forEach(b => {
         const isUnlocked = data.unlockedBadges.includes(b.id);
-        const badgeEl = document.createElement('div');
-        badgeEl.className = `badge ${isUnlocked ? 'unlocked' : ''}`;
-        badgeEl.innerHTML = b.icon;
-        badgeEl.title = isUnlocked ? b.name + ' : ' + b.desc : 'Verrouillé';
-        badgeContainer.appendChild(badgeEl);
+        const bEl = document.createElement('div');
+        bEl.className = `badge ${isUnlocked ? 'unlocked' : ''}`;
+        bEl.innerHTML = b.icon;
+        bEl.title = isUnlocked ? b.name : 'Verrouillé';
+        badgeContainer.appendChild(bEl);
       });
     }
 
     function renderActivityChart() {
       const ctx = document.getElementById('activityChart').getContext('2d');
       const data = StorageManager.data;
-      
-      // Prepare last 7 days labels
       const labels = [];
       const sessionCounts = [];
       for (let i = 6; i >= 0; i--) {
@@ -428,9 +267,7 @@
         d.setDate(d.getDate() - i);
         const dStr = d.toISOString().split('T')[0];
         labels.push(d.toLocaleDateString(data.lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'short' }));
-        
-        const count = data.sessions.filter(s => s.date === dStr).length;
-        sessionCounts.push(count);
+        sessionCounts.push(data.sessions.filter(s => s.date === dStr).length);
       }
 
       if (window.myChart) window.myChart.destroy();
@@ -439,19 +276,15 @@
         data: {
           labels: labels,
           datasets: [{
-            label: data.lang === 'fr' ? 'Séances' : 'Sessions',
             data: sessionCounts,
             borderColor: '#3b82f6',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true,
-            tension: 0.4,
-            pointBackgroundColor: '#3b82f6',
-            pointRadius: 4
+            tension: 0.4
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
             y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
@@ -461,222 +294,34 @@
       });
     }
 
-    function initSettings() {
+    function initSettingsUI() {
       const data = StorageManager.data;
-      if (!data.reminders) data.reminders = { enabled: false, type: 'interval', intervalMin: 20, fixedTimes: ['10:00','14:00'], dailyGoal: 3, pushEnabled: false };
-
-      // Themes ... (remains same)
       document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.theme === data.theme);
         btn.onclick = () => { data.theme = btn.dataset.theme; StorageManager.save(); location.reload(); };
       });
-
-      // Language ... (remains same)
-      document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.lang === data.lang);
-        btn.onclick = () => { data.lang = btn.dataset.lang; StorageManager.save(); location.reload(); };
-      });
-
-      // Ambiance & Spatial
       const ambToggle = document.getElementById('ambiance-toggle');
-      const spatialToggle = document.getElementById('spatial-toggle');
       if (ambToggle) {
         ambToggle.checked = data.ambianceEnabled;
         ambToggle.onchange = (e) => { data.ambianceEnabled = e.target.checked; StorageManager.save(); };
       }
-      if (spatialToggle) {
-        spatialToggle.checked = data.spatialAudio;
-        spatialToggle.onchange = (e) => { data.spatialAudio = e.target.checked; StorageManager.save(); };
-      }
-      document.querySelectorAll('.amb-btn').forEach(btn => {
-        btn.onclick = () => { 
-          data.ambianceType = btn.dataset.amb; 
-          StorageManager.save();
-          document.querySelectorAll('.amb-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          // Preview
-          SoundManager.init();
-          SoundManager.startAmbiance(data.ambianceType);
-          setTimeout(() => SoundManager.stopAmbiance(), 2000);
-        };
-        btn.classList.toggle('active', btn.dataset.amb === data.ambianceType);
-      });
-
-      // Reminder Center Logic
-      const masterToggle = document.getElementById('reminder-master-toggle');
-      const configPanel = document.getElementById('reminder-config');
-      const typeSelect = document.getElementById('reminder-type');
-      const pushToggle = document.getElementById('push-toggle');
-
-      masterToggle.checked = data.reminders.enabled;
-      configPanel.style.display = data.reminders.enabled ? 'block' : 'none';
-      typeSelect.value = data.reminders.type;
-
-      masterToggle.onchange = (e) => {
-        data.reminders.enabled = e.target.checked;
-        configPanel.style.display = e.target.checked ? 'block' : 'none';
-        StorageManager.save();
-        StorageManager.initReminders();
-      };
-
-      typeSelect.onchange = (e) => {
-        data.reminders.type = e.target.value;
-        updateReminderSubPanels();
-        StorageManager.save();
-      };
-
-      function updateReminderSubPanels() {
-        document.querySelectorAll('.rem-config-sub').forEach(p => p.style.display = 'none');
-        document.getElementById('config-' + data.reminders.type).style.display = 'block';
-      }
-      updateReminderSubPanels();
-
-      // Interval slider
-      const intSlider = document.getElementById('rem-interval-slider');
-      const intVal = document.getElementById('rem-interval-val');
-      intSlider.value = data.reminders.intervalMin;
-      intVal.textContent = data.reminders.intervalMin + ' min';
-      intSlider.oninput = (e) => {
-        data.reminders.intervalMin = parseInt(e.target.value);
-        intVal.textContent = data.reminders.intervalMin + ' min';
-        StorageManager.save();
-      };
-
-      // Goal slider
-      const goalSlider = document.getElementById('rem-goal-slider');
-      const goalVal = document.getElementById('rem-goal-val');
-      goalSlider.value = data.reminders.dailyGoal;
-      goalVal.textContent = data.reminders.dailyGoal;
-      goalSlider.oninput = (e) => {
-        data.reminders.dailyGoal = parseInt(e.target.value);
-        goalVal.textContent = data.reminders.dailyGoal;
-        StorageManager.save();
-      };
-
-      // Fixed times
-      const timeInput = document.getElementById('add-time-input');
-      const timesList = document.getElementById('fixed-times-list');
-      function renderFixedTimes() {
-        timesList.innerHTML = '';
-        data.reminders.fixedTimes.forEach(t => {
-          const chip = document.createElement('span');
-          chip.className = 'btn-toggle-all'; // Reusing small chip style
-          chip.style.padding = '4px 8px';
-          chip.innerHTML = `${t} <span style="margin-left:5px;cursor:pointer;opacity:0.5;">✕</span>`;
-          chip.querySelector('span').onclick = () => {
-            data.reminders.fixedTimes = data.reminders.fixedTimes.filter(x => x !== t);
-            StorageManager.save();
-            renderFixedTimes();
-          };
-          timesList.appendChild(chip);
-        });
-      }
-      renderFixedTimes();
-      timeInput.onchange = (e) => {
-        if (!data.reminders.fixedTimes.includes(e.target.value)) {
-          data.reminders.fixedTimes.push(e.target.value);
-          data.reminders.fixedTimes.sort();
-          StorageManager.save();
-          renderFixedTimes();
-        }
-      };
-
-      // Push Toggle
-      pushToggle.checked = data.reminders.pushEnabled;
-      pushToggle.onchange = async (e) => {
-        if (e.target.checked) {
-          const res = await Notification.requestPermission();
-          if (res !== 'granted') {
-            alert("Permission refusée. Les notifications push ne pourront pas être affichées.");
-            e.target.checked = false;
-          }
-        }
-        data.reminders.pushEnabled = e.target.checked;
-        StorageManager.save();
-      };
     }
 
-    async function exportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const data = StorageManager.data;
-      const user = JSON.parse(localStorage.getItem('ocuflow_user')) || { email: 'User' };
+    function showAddMemberModal() { document.getElementById('add-member-modal').style.display = 'flex'; }
+    function hideAddMemberModal() { document.getElementById('add-member-modal').style.display = 'none'; }
 
-      // Header
-      doc.setFillColor(8, 12, 16);
-      doc.rect(0, 0, 210, 40, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.text("OcuFlow PRO — Rapport d'Activité", 20, 25);
-      
-      // Info
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(10);
-      doc.text(`Utilisateur : ${user.email}`, 20, 50);
-      doc.text(`Date du rapport : ${new Date().toLocaleDateString()}`, 20, 55);
-      doc.text(`Niveau Actuel : LVL ${data.level || 1}`, 20, 60);
-
-      // Summary
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(14);
-      doc.text("Résumé de l'Entraînement", 20, 75);
-      
-      doc.setFontSize(11);
-      const totalMin = Math.round(data.sessions.reduce((a,b)=>a+(b.dur || b.duration), 0)/60);
-      doc.text(`- Séances totales : ${data.sessions.length}`, 25, 85);
-      doc.text(`- Temps d'exercice total : ${totalMin} minutes`, 25, 92);
-      doc.text(`- Série actuelle : ${data.streak} jours consécutifs`, 25, 99);
-      doc.text(`- Santé Visuelle (Eye Score) : ${StorageManager.getEyeHealthScore()}%`, 25, 106);
-
-      // Vision Tests
-      if (data.visionTests && data.visionTests.length > 0) {
-        doc.text("Derniers Diagnostics de Fatigue", 20, 125);
-        let y = 135;
-        data.visionTests.slice(-5).forEach(t => {
-          doc.text(`${new Date(t.date).toLocaleDateString()} : Score de ${t.score}%`, 25, y);
-          y += 7;
-        });
-      }
-
-      // Pro Tip
-      doc.setDrawColor(59, 130, 246);
-      doc.setLineWidth(0.5);
-      doc.line(20, 180, 190, 180);
-      doc.setTextColor(59, 130, 246);
-      doc.text("Conseil Pro : Maintenez une régularité de 3 séances quotidiennes", 20, 190);
-      doc.text("pour réduire la fatigue numérique sur le long terme.", 20, 197);
-
-      doc.save(`OcuFlow-Rapport-${new Date().toISOString().split('T')[0]}.pdf`);
-    }
-
-    function toggleTeamPanel() {
-      const p = document.getElementById('team-panel');
-      p.style.display = p.style.display === 'none' ? 'block' : 'none';
-      if (p.style.display === 'block') loadTeamMembers();
-    }
-
-    async function addTeamMember() {
-      const email = document.getElementById('new-member-email').value;
-      const password = document.getElementById('new-member-pass').value;
-      if (!email || !password) return alert("Email et mot de passe requis.");
-
+    async function addTeamMemberModal() {
+      const email = document.getElementById('modal-member-email').value;
+      const password = document.getElementById('modal-member-pass').value;
       const token = localStorage.getItem('ocuflow_token');
       try {
         const res = await fetch(`${API_BASE}/auth/team/add`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ email, password })
         });
-        if (res.ok) {
-          alert("Membre ajouté !");
-          loadTeamMembers();
-        } else {
-          const err = await res.json();
-          alert(err.error || "Erreur lors de l'ajout.");
-        }
+        if (res.ok) { alert("Membre ajouté !"); hideAddMemberModal(); loadTeamMembers(); }
+        else { const err = await res.json(); alert(err.error || "Erreur."); }
       } catch(e) { console.error(e); }
     }
 
@@ -688,121 +333,35 @@
         });
         if (res.ok) {
           const members = await res.json();
-          const list = document.getElementById('team-members-list');
-          if (members.length === 0) {
-            list.innerHTML = `<div style="font-size:0.8rem;color:var(--muted);">Aucun membre ajouté pour le moment.</div>`;
-          } else {
-            list.innerHTML = members.map(m => {
-              const xpNeeded = m.level * 1000;
-              const progress = (m.xp / xpNeeded) * 100;
-              return `
-              <div style="background:rgba(255,255,255,0.02);padding:16px;border-radius:16px;margin-bottom:12px;border:1px solid var(--border);">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                  <span style="font-weight:700;font-size:0.9rem;">${m.email}</span>
-                  <span class="lvl-badge" style="font-size:0.6rem;padding:2px 8px;background:var(--accent);border-radius:10px;color:white;">LVL ${m.level}</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:12px;">
-                  <div style="flex:1;height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;">
-                    <div style="width:${progress}%;height:100%;background:var(--gradient-vivid);"></div>
-                  </div>
-                  <span style="font-size:0.65rem;color:var(--muted);">${m.xp} XP</span>
-                </div>
-                <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-                  <div style="font-size:0.65rem;color:var(--muted);">
-                    Dernier exercice : ${m.last_login ? new Date(m.last_login).toLocaleDateString() : 'Jamais'}
-                  </div>
-                  <button onclick="exportMemberPDF('${m.email}')" class="btn btn-ghost" style="font-size:0.6rem;padding:4px 8px;border-color:rgba(255,255,255,0.1);">📄 Rapport</button>
-                </div>
+          const list = document.getElementById('team-members-list-new');
+          document.getElementById('team-total-members').textContent = members.length;
+          document.getElementById('team-total-sessions').textContent = members.reduce((acc, m) => acc + (m.sessions_count || 0), 0);
+          
+          if (members.length === 0) list.innerHTML = `<div style="padding:20px; color:var(--muted);">Aucun membre.</div>`;
+          else list.innerHTML = members.map(m => `
+            <div class="member-row">
+              <div class="member-info">
+                <div class="member-avatar">${m.email[0].toUpperCase()}</div>
+                <div><div style="font-weight:700;">${m.email}</div><div style="font-size:0.7rem;color:var(--muted);">LVL ${m.level} • ${m.xp} XP</div></div>
               </div>
-            `}).join('');
-          }
+              <button onclick="exportMemberPDF('${m.email}')" class="btn btn-ghost" style="font-size:0.6rem;">Rapport</button>
+            </div>
+          `).join('');
         }
       } catch(e) { console.error(e); }
     }
 
     window.exportMemberPDF = (email) => {
       const doc = new jspdf.jsPDF();
-      doc.setFontSize(20);
-      doc.text("Rapport OcuFlow PRO - Membre", 20, 20);
-      doc.setFontSize(12);
-      doc.text(`Utilisateur : ${email}`, 20, 40);
-      doc.text(`Date du rapport : ${new Date().toLocaleDateString()}`, 20, 50);
-      doc.text("Statut : Actif", 20, 60);
-      doc.text("Note : Ce rapport est généré par le compte Master Entreprise.", 20, 80);
-      doc.save(`Rapport_OcuFlow_${email}.pdf`);
+      doc.text(`Rapport Membre: ${email}`, 20, 20);
+      doc.save(`Rapport_${email}.pdf`);
     };
 
     document.getElementById('logout-btn').onclick = () => {
-      localStorage.removeItem('ocuflow_token');
-      localStorage.removeItem('ocuflow_user');
-      window.location.href = 'index.html';
+      localStorage.removeItem('ocuflow_token'); localStorage.removeItem('ocuflow_user'); window.location.href = 'index.html';
     };
 
-    window.showProForm = () => {
-      document.getElementById('upgrade-choice').style.display = 'none';
-      document.getElementById('pro-form').style.display = 'block';
-    };
-
-    window.hideProForm = () => {
-      document.getElementById('upgrade-choice').style.display = 'grid';
-      document.getElementById('pro-form').style.display = 'none';
-    };
-
-    async function handleUpgrade(planType) {
-      const token = localStorage.getItem('ocuflow_token');
-      
-      const body = { plan_type: planType };
-      if (planType === 'pro') {
-        body.club_name = document.getElementById('pro-club-name').value;
-        body.city = document.getElementById('pro-city').value;
-        body.phone = document.getElementById('pro-phone').value;
-        body.logo_url = document.getElementById('pro-logo').value;
-        if (!body.club_name) return alert("Veuillez saisir le nom de votre club/entreprise.");
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/payments/checkout`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (data.checkout_url) window.location.href = data.checkout_url;
-        else alert("Erreur lors de l'initiation du paiement.");
-      } catch(e) { console.error(e); }
-    }
-
-    function checkPaymentStatus() {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('payment') === 'success') {
-        alert("Félicitations ! Votre abonnement est activé. Profitez bien d'OcuFlow Premium !");
-        // Refetch user data to update is_premium status locally
-        // (In a real app, the token should be refreshed or the status fetched)
-      } else if (urlParams.get('payment') === 'cancel') {
-        alert("Le paiement a été annulé.");
-      }
-    }
-
-    try {
-      initDashboard();
-      checkPaymentStatus();
-      const user = JSON.parse(localStorage.getItem('ocuflow_user'));
-      if (user && !user.is_premium) {
-        document.getElementById('premium-upgrade-card').style.display = 'block';
-      }
-      console.log("Dashboard initialized successfully.");
-    } catch(e) {
-      console.error("Dashboard init error:", e);
-      alert("Erreur d'initialisation du tableau de bord. Tentative de réparation...");
-      if (!StorageManager.data.reminders) {
-        StorageManager.data.reminders = { enabled: false, type: 'interval', intervalMin: 20, fixedTimes: ['10:00','14:00'], dailyGoal: 3, pushEnabled: false };
-        StorageManager.save();
-        location.reload();
-      }
-    }
+    initDashboard();
   </script>
 </body>
 </html>
