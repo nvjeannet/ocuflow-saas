@@ -211,7 +211,51 @@
             </div>
             <div class="stat-card" style="text-align:left;padding:20px;">
               <span class="stat-label" style="margin-top:0;margin-bottom:12px;">🎭 Audio</span>
-              <div class="control-row"><span class="control-label">Ambiance Audio</span><label class="toggle-switch"><input type="checkbox" id="ambiance-toggle"><span class="toggle-slider"></span></label></div>
+              <div class="control-row" style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="control-label" style="font-size:0.8rem; color:var(--muted);">Ambiance Audio</span>
+                <label class="toggle-switch"><input type="checkbox" id="ambiance-toggle"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:40px; background:var(--panel); border:1px solid var(--border); border-radius:24px; padding:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+              <h4 style="font-size:0.85rem; color:white; margin:0;">⏰ Rappels Personnels</h4>
+              <label class="toggle-switch"><input type="checkbox" id="personal-reminders-toggle"><span class="toggle-slider"></span></label>
+            </div>
+            
+            <div id="personal-reminders-config" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; border-top:1px solid var(--border); padding-top:20px; transition:0.3s;">
+              <div>
+                <span style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:12px;">Type de rappel</span>
+                <select id="reminder-type" class="btn btn-ghost" style="width:100%; font-size:0.75rem; text-align:left; padding:8px;">
+                  <option value="interval">Intervalle (Minutes)</option>
+                  <option value="fixed">Heures Fixes</option>
+                </select>
+                
+                <div id="interval-config" style="margin-top:16px;">
+                  <span style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Toutes les (min) :</span>
+                  <input type="number" id="reminder-interval" value="20" class="btn btn-ghost" style="width:100%; text-align:left; padding:8px;">
+                </div>
+                
+                <div id="fixed-config" style="margin-top:16px; display:none;">
+                  <span style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Ajouter une heure :</span>
+                  <div id="personal-fixed-times" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
+                  <input type="time" id="add-personal-time" class="btn btn-ghost" style="width:100%; font-size:0.75rem; padding:8px;">
+                </div>
+              </div>
+              
+              <div>
+                <span style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:12px;">Jours actifs</span>
+                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                  <button class="day-toggle personal-day-toggle" data-day="1">L</button>
+                  <button class="day-toggle personal-day-toggle" data-day="2">M</button>
+                  <button class="day-toggle personal-day-toggle" data-day="3">M</button>
+                  <button class="day-toggle personal-day-toggle" data-day="4">J</button>
+                  <button class="day-toggle personal-day-toggle" data-day="5">V</button>
+                  <button class="day-toggle personal-day-toggle" data-day="6" style="opacity:0.6;">S</button>
+                  <button class="day-toggle personal-day-toggle" data-day="0" style="opacity:0.6;">D</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -343,6 +387,84 @@
         ambToggle.checked = data.ambianceEnabled;
         ambToggle.onchange = (e) => { data.ambianceEnabled = e.target.checked; StorageManager.save(); };
       }
+
+      // Rappels Personnels
+      const r = data.reminders || { enabled: true, type: 'interval', value: 20, fixedTimes: [], days: [1,2,3,4,5] };
+      const rToggle = document.getElementById('personal-reminders-toggle');
+      const rConfig = document.getElementById('personal-reminders-config');
+      
+      rToggle.checked = r.enabled;
+      rConfig.style.opacity = r.enabled ? '1' : '0.4';
+      rConfig.style.pointerEvents = r.enabled ? 'all' : 'none';
+      
+      rToggle.onchange = (e) => {
+        r.enabled = e.target.checked;
+        rConfig.style.opacity = r.enabled ? '1' : '0.4';
+        rConfig.style.pointerEvents = r.enabled ? 'all' : 'none';
+        StorageManager.save();
+      };
+
+      const rType = document.getElementById('reminder-type');
+      rType.value = r.type;
+      document.getElementById('interval-config').style.display = r.type === 'interval' ? 'block' : 'none';
+      document.getElementById('fixed-config').style.display = r.type === 'fixed' ? 'block' : 'none';
+      
+      rType.onchange = (e) => {
+        r.type = e.target.value;
+        document.getElementById('interval-config').style.display = r.type === 'interval' ? 'block' : 'none';
+        document.getElementById('fixed-config').style.display = r.type === 'fixed' ? 'block' : 'none';
+        StorageManager.save();
+      };
+
+      const rInterval = document.getElementById('reminder-interval');
+      rInterval.value = r.value;
+      rInterval.onchange = (e) => { r.value = parseInt(e.target.value); StorageManager.save(); };
+
+      renderPersonalFixedTimes(r);
+      renderPersonalDays(r);
+
+      document.getElementById('add-personal-time').onchange = (e) => {
+        const val = e.target.value;
+        if (val && !r.fixedTimes.includes(val)) {
+          r.fixedTimes.push(val);
+          r.fixedTimes.sort();
+          StorageManager.save();
+          renderPersonalFixedTimes(r);
+        }
+      };
+    }
+
+    function renderPersonalFixedTimes(r) {
+      const list = document.getElementById('personal-fixed-times');
+      list.innerHTML = '';
+      r.fixedTimes.forEach(t => {
+        const chip = document.createElement('span');
+        chip.className = 'level-badge';
+        chip.style.background = 'rgba(255,255,255,0.05)';
+        chip.style.border = '1px solid var(--border)';
+        chip.style.padding = '4px 10px';
+        chip.style.cursor = 'pointer';
+        chip.innerHTML = `${t} <span style="margin-left:5px; opacity:0.5;">✕</span>`;
+        chip.onclick = () => {
+          r.fixedTimes = r.fixedTimes.filter(x => x !== t);
+          StorageManager.save();
+          renderPersonalFixedTimes(r);
+        };
+        list.appendChild(chip);
+      });
+    }
+
+    function renderPersonalDays(r) {
+      document.querySelectorAll('.personal-day-toggle').forEach(btn => {
+        btn.classList.toggle('active', r.days.includes(parseInt(btn.dataset.day)));
+        btn.onclick = () => {
+          const day = parseInt(btn.dataset.day);
+          if (r.days.includes(day)) r.days = r.days.filter(d => d !== day);
+          else r.days.push(day);
+          StorageManager.save();
+          renderPersonalDays(r);
+        };
+      });
     }
 
     function showAddMemberModal() { document.getElementById('add-member-modal').style.display = 'flex'; }
