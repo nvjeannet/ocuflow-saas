@@ -152,10 +152,28 @@
         recIcon.textContent = "⚠️";
       }
       
-      // Save result to data
+      // Save result to data (Local)
       if (!StorageManager.data.visionTests) StorageManager.data.visionTests = [];
       StorageManager.data.visionTests.push({ date: new Date().toISOString(), score });
       StorageManager.save();
+
+      // Sync to Backend (AI Engine)
+      syncTestToBackend(score);
+    }
+
+    async function syncTestToBackend(score) {
+      const token = localStorage.getItem('ocuflow_token');
+      if (!token) return;
+      try {
+        await fetch(`${API_BASE}/ai/test`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ score, type: 'contrast' })
+        });
+      } catch (e) { console.error('AI Sync Error:', e); }
     }
   </script>
 </body>

@@ -10,6 +10,7 @@ const paymentRoutes = require('./payments');
 const path = require('path');
 const webhookRoutes = require('./webhooks');
 const geoip = require('./middleware/geoip');
+const aiRoutes = require('./ai');
 
 const app = express();
 app.use(cors());
@@ -30,6 +31,7 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/routines', routineRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/ai', aiRoutes);
 
 // REDIRECTION PAR DÉFAUT VERS L'INDEX (CATCH-ALL)
 app.use((req, res, next) => {

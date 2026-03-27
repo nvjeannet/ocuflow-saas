@@ -99,6 +99,15 @@
             <div>
               <h2 style="font-size:2rem;margin-bottom:8px;"><span id="welcome-text"></span> <span id="user-display-name" style="color:var(--accent-light);">Oculiste</span> <span id="user-level" class="level-badge">LVL 1</span> 👋</h2>
               <p id="ready-text" style="color:var(--muted);font-size:0.9rem;"></p>
+              
+              <!-- IA Advice Card -->
+              <div id="ai-suggestion-card" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); border-radius:30px; padding:24px; max-width:400px; display:none; margin-bottom:20px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px; color:var(--accent-light); font-size:0.75rem; font-weight:800; letter-spacing:0.1em;">
+                  <span>✨ IA OCULAIRE</span>
+                </div>
+                <p id="ai-suggestion-text" style="font-size:0.85rem; color:white; line-height:1.5; margin:0; font-weight:500;"></p>
+              </div>
+
               <div class="xp-container">
                 <div class="xp-header">
                   <span>Progression XP</span>
@@ -187,13 +196,33 @@
         </div>
       </div>
 
-      <!-- Tab: Santé & Rapports -->
       <div id="tab-reports" class="tab-pane">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
           <h2 style="font-size:2rem;margin-bottom:32px;">📊 Santé & Rapports</h2>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:40px;">
-            <div class="card-feature" onclick="window.location.href='tests.html'" style="cursor:pointer;"><i>👁️</i><h3>Bilan de Santé IA</h3><p>Analysez votre fatigue visuelle.</p></div>
-            <div class="card-feature" onclick="exportPDF()" style="cursor:pointer;"><i>📄</i><h3>Rapport PDF</h3><p>Générez un bilan complet.</p></div>
+          
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:30px; margin-bottom:40px;">
+            <!-- Health Gauge -->
+            <div style="background:var(--panel); padding:30px; border-radius:24px; border:1px solid var(--border); text-align:center;">
+              <h4 style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; margin-bottom:20px;">Score de Santé Visuelle</h4>
+              <div style="position:relative; width:200px; margin:0 auto;">
+                <canvas id="health-gauge"></canvas>
+                <div id="health-score-val" style="position:absolute; top:70%; left:50%; transform:translate(-50%,-50%); font-size:2rem; font-weight:800; color:white;">--</div>
+              </div>
+              <p id="health-label" style="font-weight:700; margin-top:10px; font-size:1.1rem; color:var(--accent-light);">Analyse...</p>
+            </div>
+
+            <!-- Recommendations -->
+            <div style="background:var(--panel); padding:30px; border-radius:24px; border:1px solid var(--border);">
+              <h4 style="font-size:0.85rem; color:var(--muted); text-transform:uppercase; margin-bottom:20px;">Conseils de l'IA</h4>
+              <ul id="ai-recommendations-list" style="padding:0; list-style:none; display:flex; flex-direction:column; gap:12px;">
+                <li style="color:var(--muted); font-size:0.85rem;">Calcul en cours...</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+            <div class="card-feature" onclick="window.location.href='tests.html'" style="cursor:pointer;"><i>👁️</i><h3>Relancer un Bilan</h3><p>Mesurez votre fatigue actuelle.</p></div>
+            <div class="card-feature" onclick="exportPDF()" style="cursor:pointer;"><i>📄</i><h3>Rapport PDF</h3><p>Archivez vos progrès santé.</p></div>
           </div>
         </div>
       </div>
@@ -321,6 +350,66 @@
       renderStats();
       renderActivityChart();
       initSettingsUI();
+      fetchHealthScore();
+    }
+
+    async function fetchHealthScore() {
+      const token = localStorage.getItem('ocuflow_token');
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_BASE}/ai/health-score`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          renderHealthScore(data);
+          
+          // Show advice on homepage
+          if (data.recommendations && data.recommendations.length > 0) {
+            document.getElementById('ai-suggestion-card').style.display = 'block';
+            document.getElementById('ai-suggestion-text').textContent = data.recommendations[0];
+          }
+        }
+      } catch (e) { console.error('AI Fetch Error:', e); }
+    }
+
+    let healthChart = null;
+    function renderHealthScore(data) {
+      document.getElementById('health-score-val').textContent = data.score;
+      const label = document.getElementById('health-label');
+      label.textContent = data.label;
+      label.style.color = data.color;
+
+      const list = document.getElementById('ai-recommendations-list');
+      list.innerHTML = data.recommendations.map(r => `
+        <li style="display:flex; gap:10px; align-items:start; font-size:0.85rem; color:white;">
+          <span style="color:${data.color};">✦</span>
+          <span>${r}</span>
+        </li>
+      `).join('');
+
+      // Render Gauge
+      const ctx = document.getElementById('health-gauge').getContext('2d');
+      if (healthChart) healthChart.destroy();
+      healthChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [data.score, 100 - data.score],
+            backgroundColor: [data.color, 'rgba(255,255,255,0.05)'],
+            borderWidth: 0,
+            circumference: 180,
+            rotation: 270,
+            cutout: '85%',
+            borderRadius: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { tooltip: { enabled: false } }
+        }
+      });
     }
 
     function renderStats() {
