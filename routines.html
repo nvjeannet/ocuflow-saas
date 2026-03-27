@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OcuFlow — Gestion des Routines</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .ex-selector{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px;}
+    .ex-chip{padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:.65rem;cursor:pointer;display:flex;align-items:center;gap:6px;}
+    .ex-chip.active{border-color:var(--accent);background:rgba(0,229,255,.1);color:var(--accent);}
+    input[type=text],textarea{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font-family:inherit;margin-top:4px;}
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div style="display:flex;align-items:center;margin-bottom:20px;margin-top:10px;">
+      <a href="config.html" class="btn btn-ghost" style="padding:8px 12px;margin-right:16px;">←</a>
+      <div class="logo">Gestion des <span>Routines</span></div>
+    </div>
+
+    <div class="section" id="routine-editor" style="display:none;">
+      <div class="section-title">Modifier la Routine</div>
+      <div style="margin-bottom:12px;">
+        <label class="control-label">Nom de la routine</label>
+        <input type="text" id="edit-name">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="control-label">Description courte</label>
+        <input type="text" id="edit-desc">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label class="control-label">Durée (secondes)</label>
+        <input type="number" id="edit-dur" style="width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;">
+      </div>
+      
+      <div class="section-title" style="margin-top:20px;">Sélectionner les Exercices</div>
+      <div class="ex-selector" id="ex-selector"></div>
+
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <button class="btn btn-ghost" onclick="closeEditor()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveCurrentRoutine()">Enregistrer</button>
+      </div>
+    </div>
+
+    <div class="section" id="routine-list-container">
+      <div class="section-title">Mes Routines</div>
+      <div class="routine-grid" id="routine-list"></div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:12px;border-style:dashed;" onclick="createNewRoutine()">+ Nouvelle Routine</button>
+    </div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/movements.js"></script>
+  <script>
+    StorageManager.init();
+    let currentEditingId = null;
+    let selectedExs = [];
+
+    // Rafraîchir l'UI quand la synchro backend est terminée
+    window.refreshUI = () => {
+      renderRoutines();
+    };
+
+    function renderRoutines() {
+      const container = document.getElementById('routine-list');
+      container.innerHTML = '';
+      const routines = StorageManager.getRoutines();
+      routines.forEach(r => {
+        const isCustom = isNaN(r.id) === false || r.id.toString().startsWith('custom_');
+        const div = document.createElement('div');
+        div.className = 'routine-btn';
+        div.innerHTML = `
+          <span style="font-size:1.5rem">${r.icon || '🎯'}</span>
+          <div style="flex:1">
+            <span class="routine-name">${r.name}</span>
+            <span class="routine-desc">${r.desc}</span>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-ghost" style="padding:6px 10px;" onclick="event.stopPropagation(); editRoutine('${r.id}')">✏️</button>
+            ${isCustom ? `<button class="btn btn-ghost" style="padding:6px 10px;color:#ff5252;" onclick="event.stopPropagation(); confirmDelete('${r.id}')">🗑️</button>` : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function confirmDelete(id) {
+      if (confirm('Supprimer cette routine ?')) {
+        StorageManager.deleteRoutine(id);
+        renderRoutines();
+      }
+    }
+
+    function editRoutine(id) {
+      const routines = StorageManager.getRoutines();
+      let r = routines.find(x => x.id == id);
+      
+      // If not found (new routine), create a default object
+      if(!r) {
+        r = { id, name: "Ma Routine", desc: "Description perso", dur: 120, exs: [] };
+      }
+
+      currentEditingId = id;
+      selectedExs = [...(r.exs || [])];
+      document.getElementById('edit-name').value = r.name;
+      document.getElementById('edit-desc').value = r.desc || '';
+      document.getElementById('edit-dur').value = r.dur || 120;
+      
+      renderExSelector();
+      document.getElementById('routine-list-container').style.display = 'none';
+      document.getElementById('routine-editor').style.display = 'block';
+    }
+
+    function renderExSelector() {
+      const container = document.getElementById('ex-selector');
+      container.innerHTML = '';
+      MOVEMENTS_DATA.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `ex-chip ${selectedExs.includes(m.id) ? 'active' : ''}`;
+        div.innerHTML = `<span>${m.icon}</span> ${m.name}`;
+        div.onclick = () => {
+          if(selectedExs.includes(m.id)) selectedExs = selectedExs.filter(id => id !== m.id);
+          else selectedExs.push(m.id);
+          renderExSelector();
+        };
+        container.appendChild(div);
+      });
+    }
+
+    async function saveCurrentRoutine() {
+      const name = document.getElementById('edit-name').value;
+      const desc = document.getElementById('edit-desc').value;
+      const dur = parseInt(document.getElementById('edit-dur').value);
+      
+      if(!name || selectedExs.length === 0) return alert('Veuillez donner un nom et choisir au moins 1 exercice.');
+
+      const btn = document.querySelector('.btn-primary');
+      const originalText = btn.innerText;
+      btn.innerText = 'Enregistrement...';
+      btn.disabled = true;
+
+      await StorageManager.saveRoutine({
+        id: currentEditingId,
+        name, desc, dur,
+        exs: selectedExs,
+        icon: '🎯'
+      });
+
+      btn.innerText = originalText;
+      btn.disabled = false;
+      closeEditor();
+      renderRoutines();
+    }
+
+    function closeEditor() {
+      document.getElementById('routine-list-container').style.display = 'block';
+      document.getElementById('routine-editor').style.display = 'none';
+    }
+
+    function createNewRoutine() {
+      const id = 'custom_' + Date.now();
+      editRoutine(id);
+      document.getElementById('edit-name').value = "Ma Routine";
+      document.getElementById('edit-desc').value = "Description perso";
+      document.getElementById('edit-dur').value = 120;
+      selectedExs = [];
+      renderExSelector();
+    }
+
+    renderRoutines();
+  </script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OcuFlow — Configuration</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="js/core.js"></script>
+  <style>
+    .ex-selector{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:10px;}
+    .ex-chip{padding:12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);font-size:.7rem;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .2s;position:relative;}
+    .ex-chip.active{border-color:var(--accent);background:rgba(59,130,246,0.1);color:white;box-shadow:0 0 15px rgba(59,130,246,0.2);}
+    .ex-chip:hover{border-color:var(--muted);transform:translateY(-2px);}
+    .section.hidden{display:none;}
+    
+    .cat-group{margin-bottom:20px;}
+    .cat-label{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:12px;}
+    .cat-title{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent-light);}
+    .btn-toggle-all{font-size:.6rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);padding:2px 8px;border-radius:6px;cursor:pointer;transition:.2s;}
+    .btn-toggle-all:hover{color:var(--accent);border-color:var(--accent);}
+
+    #ex-info-panel {
+      margin-bottom: 20px;
+      padding: 20px;
+      background: rgba(59, 130, 246, 0.08);
+      border: 1px dashed var(--accent);
+      border-radius: 16px;
+      min-height: 80px;
+      transition: all 0.3s;
+      opacity: 0.8;
+    }
+    #ex-info-panel.highlight { opacity: 1; background: rgba(59, 130, 246, 0.15); border-style: solid; }
+    #ex-info-title { display: block; font-weight: 800; color: white; margin-bottom: 4px; font-size: 0.9rem; }
+    #ex-info-text { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    #ex-info-benefit { display: block; font-size: 0.75rem; color: var(--accent-light); margin-top: 8px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div style="display:flex;align-items:center;margin-bottom:20px;margin-top:10px;">
+      <a href="dashboard.html" class="btn btn-ghost" style="padding:8px 12px;margin-right:16px;">←</a>
+      <div id="config-page-title" class="logo">Configuration</div>
+    </div>
+
+    <!-- Mode Toggle (Optional now, as it's set from landing) -->
+    <div class="section" id="mode-selector-section" style="display:none;">
+      <div class="section-title">Mode d'entraînement</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-ghost" id="mode-btn-routine">Routines</button>
+        <button class="btn btn-ghost" id="mode-btn-free">Mode Libre</button>
+      </div>
+    </div>
+
+    <!-- Routines List -->
+    <div class="section" id="section-routines">
+      <div class="section-title">
+        <span>Choisir une Routine</span>
+        <a href="routines.html" class="btn btn-ghost" style="padding:8px 16px;font-size:.7rem;background:rgba(59,130,246,0.1);border-color:var(--accent);color:white;">⚙ Gérer</a>
+      </div>
+      <div class="routine-grid" id="routine-list"></div>
+    </div>
+
+    <!-- Free Exercises Selection -->
+    <div class="section hidden" id="section-free-exercises">
+      <div class="section-title">Sélectionnez vos exercices</div>
+      
+      <div id="ex-info-panel">
+        <span id="ex-info-title">Survolez un exercice</span>
+        <span id="ex-info-text">Sélectionnez un ou plusieurs mouvements pour créer votre session personnalisée.</span>
+        <span id="ex-info-benefit" style="display:none;"></span>
+      </div>
+
+      <div id="free-ex-list"></div>
+    </div>
+
+    <!-- Session Settings -->
+    <div class="section" id="section-settings">
+      <div class="section-title">Paramètres de Session</div>
+      <div class="control-row">
+        <span class="control-label">Durée Totale</span>
+        <span class="control-val" id="dur-val">60s</span>
+      </div>
+      <input type="range" id="dur-slider" min="10" max="1080" step="5" value="60" style="margin-bottom:20px;">
+      <div class="control-row">
+        <span class="control-label">Vitesse</span>
+        <span class="control-val" id="spd-val">×1.0</span>
+      </div>
+      <input type="range" id="spd-slider" min="1" max="10" step="0.5" value="3">
+    </div>
+
+    <!-- Preferences -->
+    <div class="section">
+      <div class="section-title">Confort & Audio</div>
+      <div class="control-row">
+        <span class="control-label">🔊 Guidage Vocal</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="audio-toggle-input">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="control-row">
+        <span class="control-label">🌙 Mode Nuit Auto</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="night-mode-input">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="margin-top:20px;">
+        <span class="control-label" style="display:block;margin-bottom:12px;">🎭 Ambiance de Session</span>
+        <div id="ambiance-options" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-ghost amb-btn" data-amb="zen">✨ Zen</button>
+          <button class="btn btn-ghost amb-btn" data-amb="rain">🌧️ Pluie</button>
+          <button class="btn btn-ghost amb-btn" data-amb="ocean">🌊 Océan</button>
+          <button class="btn btn-ghost amb-btn" data-amb="forest">🌲 Forêt</button>
+          <button class="btn btn-ghost amb-btn" data-amb="binaural" style="grid-column: span 2;">🧠 Binaural (Méditation)</button>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Effet Spatial (8D)</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="spatial-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;margin-bottom:40px;">
+      <button id="start-btn" class="btn btn-primary" style="width:100%;font-size:1.1rem;padding:18px;">Lancer l'entraînement</button>
+    </div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/movements.js"></script>
+  <script>
+    StorageManager.init();
+    const data = StorageManager.data;
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentMode = urlParams.get('mode') || 'routine';
+    let freeSelectedExs = data.freeSelectedExs || [0, 1, 4];
+
+    function init() {
+      console.log("Config initialization...", currentMode);
+      // Toggle sections based on mode
+      const routineSection = document.getElementById('section-routines');
+      const freeSection = document.getElementById('section-free-exercises');
+      const titleEl = document.getElementById('config-page-title');
+      if (currentMode === 'free') {
+        if(routineSection) routineSection.classList.add('hidden');
+        if(freeSection) freeSection.classList.remove('hidden');
+        if(titleEl) titleEl.textContent = 'Session Libre';
+        renderFreeExercises();
+      } else {
+        if(routineSection) routineSection.classList.remove('hidden');
+        if(freeSection) freeSection.classList.add('hidden');
+        if(titleEl) titleEl.textContent = 'Routines';
+        renderRoutines();
+      }
+      updateUI();
+    }
+
+    // Render Routines
+    function renderRoutines() {
+      const routineList = document.getElementById('routine-list');
+      routineList.innerHTML = '';
+      const routines = StorageManager.getRoutines();
+      routines.forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = `routine-btn ${data.currentRoutineId === r.id ? 'active' : ''}`;
+        btn.innerHTML = `
+          <span style="font-size:1.5rem">${r.icon || '🎯'}</span>
+          <div style="flex:1">
+            <span class="routine-name">${r.name}</span>
+            <span class="routine-desc">${r.desc}</span>
+          </div>
+        `;
+        btn.onclick = () => {
+          document.querySelectorAll('.routine-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          data.currentRoutineId = r.id;
+          data.totalDuration = r.dur;
+          StorageManager.save();
+          updateUI();
+        };
+        routineList.appendChild(btn);
+      });
+    }
+
+    // Render Free Exercises
+    function renderFreeExercises() {
+      const list = document.getElementById('free-ex-list');
+      list.innerHTML = '';
+      
+      const categories = [
+        { id: 'pursuit', label: '〰 Poursuite Douce' },
+        { id: 'saccade', label: '⚡ Saccades' },
+        { id: 'accom',   label: '🔍 Accommodation' },
+        { id: 'relax',   label: '😌 Relaxation' }
+      ];
+
+      categories.forEach(cat => {
+        const exs = MOVEMENTS_DATA.filter(m => m.cat === cat.id);
+        if(exs.length === 0) return;
+
+        const group = document.createElement('div');
+        group.className = 'cat-group';
+        
+        const label = document.createElement('div');
+        label.className = 'cat-label';
+        label.innerHTML = `
+          <span class="cat-title">${cat.label}</span>
+          <button class="btn-toggle-all" onclick="toggleCategory('${cat.id}')">tout</button>
+        `;
+        group.appendChild(label);
+
+        const grid = document.createElement('div');
+        grid.className = 'ex-selector';
+        
+        exs.forEach(m => {
+          const div = document.createElement('div');
+          div.className = `ex-chip ${freeSelectedExs.includes(m.id) ? 'active' : ''}`;
+          div.innerHTML = `
+            <span style="font-size:1.3rem">${m.icon}</span>
+            <div style="display:flex;flex-direction:column;gap:1px;flex:1;overflow:hidden;">
+              <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.name}</span>
+            </div>
+          `;
+          div.onmouseenter = () => updateInfoPanel(m);
+          div.onclick = (e) => {
+            updateInfoPanel(m);
+            if (freeSelectedExs.includes(m.id)) {
+              if (freeSelectedExs.length > 1) freeSelectedExs = freeSelectedExs.filter(id => id !== m.id);
+            } else {
+              freeSelectedExs.push(m.id);
+            }
+            data.freeSelectedExs = freeSelectedExs;
+            StorageManager.save();
+            renderFreeExercises();
+          };
+          grid.appendChild(div);
+        });
+        
+        group.appendChild(grid);
+        list.appendChild(group);
+      });
+    }
+
+    function updateInfoPanel(m) {
+      const panel = document.getElementById('ex-info-panel');
+      const title = document.getElementById('ex-info-title');
+      const text = document.getElementById('ex-info-text');
+      const benefit = document.getElementById('ex-info-benefit');
+
+      panel.classList.add('highlight');
+      title.textContent = m.icon + " " + m.name;
+      text.textContent = m.desc;
+      benefit.style.display = 'block';
+      benefit.textContent = "💡 Bienfait : " + m.benefit;
+    }
+
+    window.toggleCategory = (catId) => {
+      const catExs = MOVEMENTS_DATA.filter(m => m.cat === catId).map(m => m.id);
+      const allSelected = catExs.every(id => freeSelectedExs.includes(id));
+      
+      if(allSelected) {
+        // Remove all from this category (but keep at least 1 global)
+        const othersSelected = freeSelectedExs.filter(id => !catExs.includes(id));
+        if(othersSelected.length > 0) {
+          freeSelectedExs = othersSelected;
+        } else {
+          // Keep the first one of the category
+          freeSelectedExs = [catExs[0]];
+        }
+      } else {
+        // Add all from this category
+        catExs.forEach(id => {
+          if(!freeSelectedExs.includes(id)) freeSelectedExs.push(id);
+        });
+      }
+      data.freeSelectedExs = freeSelectedExs;
+      StorageManager.save();
+      renderFreeExercises();
+    };
+
+    // Sliders
+    const durSlider = document.getElementById('dur-slider');
+    const spdSlider = document.getElementById('spd-slider');
+    const durVal = document.getElementById('dur-val');
+    const spdVal = document.getElementById('spd-val');
+
+    function updateUI() {
+      const v = data.totalDuration;
+      durVal.textContent = v >= 60 ? Math.floor(v/60) + 'min' + (v%60 ? v%60 + 's' : '') : v + 's';
+      durSlider.value = v;
+      spdVal.textContent = '×' + data.speed.toFixed(1);
+    }
+
+    durSlider.oninput = (e) => { data.totalDuration = parseInt(e.target.value); updateUI(); };
+    spdSlider.oninput = (e) => { data.speed = parseFloat(e.target.value); updateUI(); };
+
+    // Toggles
+    const audioInput = document.getElementById('audio-toggle-input');
+    const nightInput = document.getElementById('night-mode-input');
+    audioInput.checked = data.audioEnabled;
+    nightInput.checked = data.nightModeEnabled;
+    audioInput.onchange = (e) => { data.audioEnabled = e.target.checked; StorageManager.save(); };
+    nightInput.onchange = (e) => { data.nightModeEnabled = e.target.checked; StorageManager.save(); };
+
+    // Ambiance & Spatial
+    const spatialToggle = document.getElementById('spatial-toggle');
+    spatialToggle.checked = data.spatialAudio;
+    spatialToggle.onchange = (e) => { data.spatialAudio = e.target.checked; StorageManager.save(); };
+
+    function renderAmbiance() {
+      document.querySelectorAll('.amb-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.amb === data.ambianceType);
+        btn.onclick = () => {
+          data.ambianceType = btn.dataset.amb;
+          StorageManager.save();
+          renderAmbiance();
+          // Preview
+          SoundManager.init();
+          SoundManager.startAmbiance(data.ambianceType);
+          setTimeout(() => SoundManager.stopAmbiance(), 2000);
+        };
+      });
+    }
+    renderAmbiance();
+
+    document.getElementById('start-btn').onclick = () => {
+      // In free mode, we create a temporary "Free" routine
+      if (currentMode === 'free') {
+        data.currentRoutineId = 'free_session';
+        StorageManager.saveRoutine({
+          id: 'free_session',
+          name: 'Session Libre',
+          exs: freeSelectedExs,
+          dur: data.totalDuration,
+          icon: '🎯'
+        });
+      }
+      StorageManager.save();
+      window.location.href = 'training.html';
+    };
+
+    init();
+    
+    // I18n translation
+    if (StorageManager.data.lang === 'en') {
+      document.querySelector('h1').textContent = getT('settings');
+      document.getElementById('start-btn').textContent = getT('start_routine');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OcuFlow — Soulagez vos yeux du numérique</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="page-container">
+    <nav>
+      <div class="logo">Ocu<span>Flow</span></div>
+      <div id="nav-actions" style="display:flex;align-items:center;gap:24px;">
+        <div id="lang-switcher" style="display:flex;gap:12px;font-size:.7rem;font-weight:700;cursor:pointer;color:var(--muted);border-right:1px solid var(--border);padding-right:24px;margin-right:24px;">
+          <span onclick="setLang('fr')" id="lang-fr" style="color:var(--text);">FR</span>
+          <span>|</span>
+          <span onclick="setLang('en')" id="lang-en">EN</span>
+        </div>
+        <div id="user-pill" style="display:none;align-items:center;gap:16px;">
+          <span id="user-email-pill" style="font-size:.75rem;color:var(--muted);font-weight:500;"></span>
+          <a href="dashboard.html" class="btn btn-primary" style="padding:8px 16px;font-size:.7rem;" id="nav-dashboard-btn">Tableau de Bord</a>
+          <button id="logout-btn" style="background:transparent;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;">✕</button>
+        </div>
+        <a href="auth.html" class="btn btn-ghost" id="login-nav-btn">Connexion</a>
+      </div>
+    </nav>
+
+    <header class="hero" id="logged-out-hero" style="padding: 60px 0;">
+      <div style="background:var(--accent);width:80px;height:24px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:800;letter-spacing:.1em;margin-bottom:24px;color:white;text-transform:uppercase;">NOUVEAU</div>
+      <h1>Musclez votre regard,<br>libérez votre vision.</h1>
+      <p style="margin-bottom: 40px;">Comme tout autre muscle, vos yeux ont besoin d'exercice pour rester performants. OcuFlow est votre salle de sport visuelle : profitez de sessions guidées de rééducation légère, d'exercices de "cardio-visuel" pour tonifier vos muscles oculaires, booster votre concentration et d'outils de suivi pour transformer votre temps d'écran en moment de soin.</p>
+      <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">
+        <a href="auth.html" class="btn btn-primary" style="font-size:1rem;padding:18px 40px;">Commencer Gratuitement</a>
+        <a href="#pricing" class="btn btn-ghost" style="font-size:1rem;padding:18px 40px;">Voir les Tarifs</a>
+    </header>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;margin:60px 0;">
+      <div class="card-feature">
+        <i>🌀</i>
+        <h3 style="margin-bottom:12px;font-size:1.2rem;">Poursuite Douce</h3>
+        <p style="color:var(--muted);font-size:.9rem;">Améliore la coordination oculaire et assouplit les muscles ciliaires pour un confort visuel durable.</p>
+      </div>
+      <div class="card-feature">
+        <i>⚡</i>
+        <h3 style="margin-bottom:12px;font-size:1.2rem;">Saccades Rapides</h3>
+        <p style="color:var(--muted);font-size:.9rem;">Entraîne vos yeux à capter l'information plus rapidement et avec plus de précision sur vos écrans.</p>
+      </div>
+      <div class="card-feature">
+        <i>🔍</i>
+        <h3 style="margin-bottom:12px;font-size:1.2rem;">Focus & Zoom</h3>
+        <p style="color:var(--muted);font-size:.9rem;">Travaillez l'accommodation pour une mise au point parfaite et prévenez l'insuffisance de convergence.</p>
+      </div>
+    </div>
+
+    <section id="pricing" style="padding:60px 0;">
+      <div style="text-align:center;margin-bottom:60px;">
+        <h2 style="font-size:2.5rem;letter-spacing:-0.04em;margin-bottom:12px;">Tarifs simples et transparents</h2>
+        <p style="color:var(--muted);">Détecté : <span id="detected-country">-</span> | Investissez dans votre santé visuelle dès aujourd'hui.</p>
+      </div>
+      
+      <div id="pricing-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:32px;max-width:1100px;margin:0 auto;">
+        <!-- Injecté dynamiquement -->
+      </div>
+    </section>
+
+    <!-- Section Témoignages -->
+    <section id="testimonials" style="padding:60px 0; border-top:1px solid var(--border);">
+      <div style="text-align:center;margin-bottom:60px;">
+        <h2 style="font-size:2.5rem;letter-spacing:-0.04em;margin-bottom:12px;">Ils nous font confiance</h2>
+        <p style="color:var(--muted);">Découvrez comment OcuFlow améliore le quotidien de nos utilisateurs.</p>
+      </div>
+      <div id="testimonials-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+        <!-- Injecté dynamiquement -->
+      </div>
+    </section>
+
+    <!-- Section Partenaires -->
+    <section id="partners" style="padding:60px 0; text-align:center; border-top:1px solid var(--border);">
+      <h3 style="font-size:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:40px;">Nos Partenaires Santé</h3>
+      <div id="partners-list" style="display:flex;justify-content:center;gap:60px;flex-wrap:wrap;transition: 0.3s;">
+        <!-- Injecté dynamiquement -->
+      </div>
+    </section>
+
+  </div>
+
+  <footer style="padding: 60px 0 40px;">
+    <div class="page-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:48px;">
+      <div class="footer-col" style="grid-column: span 2;">
+        <div class="logo" style="margin-bottom:24px;">Ocu<span>Flow</span></div>
+        <p style="color:var(--muted);font-size:.85rem;max-width:300px;">Optimisez votre santé visuelle au bureau grâce à des exercices ludiques et scientifiques.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Produit</h4>
+        <div style="display:grid;gap:12px;">
+          <a href="#">Routines</a>
+          <a href="#">Mode Libre</a>
+          <a href="#">Historique</a>
+          <a href="#">Tarifs</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Entreprise</h4>
+        <div style="display:grid;gap:12px;">
+          <a href="#">À propos</a>
+          <a href="#">Blog</a>
+          <a href="#">Contact</a>
+          <a href="#">Aide</a>
+        </div>
+      </div>
+    </div>
+    <div class="page-container" style="margin-top:60px;padding-top:30px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--muted);">
+      <p>&copy; 2026 OcuFlow SaaS. Fait avec passion pour vos yeux.</p>
+      <div style="display:flex;gap:24px;">
+        <a href="#">Twitter</a>
+        <a href="#">LinkedIn</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/core.js"></script>
+  <script>
+    StorageManager.init();
+    
+    // UI elements
+    const welcomeBox = document.getElementById('welcome-box');
+    const userPill = document.getElementById('user-pill');
+    const loginNavBtn = document.getElementById('login-nav-btn');
+    const userEmailPill = document.getElementById('user-email-pill');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    function checkAuth() {
+      const user = JSON.parse(localStorage.getItem('ocuflow_user'));
+      const token = localStorage.getItem('ocuflow_token');
+
+      if (user && token) {
+        userPill.style.display = 'flex';
+        loginNavBtn.style.display = 'none';
+        userEmailPill.textContent = user.email;
+      } else {
+        userPill.style.display = 'none';
+        loginNavBtn.style.display = 'inline-flex';
+      }
+      applyLanguage();
+    }
+
+    window.setLang = (lang) => {
+      StorageManager.data.lang = lang;
+      StorageManager.save();
+      applyLanguage();
+    };
+
+    function applyLanguage() {
+      const lang = StorageManager.data.lang || 'fr';
+      const isEn = lang === 'en';
+      
+      // Update toggle UI
+      document.getElementById('lang-fr').style.color = isEn ? 'var(--muted)' : 'var(--text)';
+      document.getElementById('lang-en').style.color = isEn ? 'var(--text)' : 'var(--muted)';
+      
+      // Update Hero (Simple manual translation for landing)
+      const h1 = document.querySelector('h1');
+      const p = document.querySelector('.hero p');
+      const startBtn = document.querySelector('.hero .btn-primary');
+      const navDash = document.getElementById('nav-dashboard-btn');
+      const navLogin = document.getElementById('login-nav-btn');
+
+      if (isEn) {
+        h1.innerHTML = "Strengthen your gaze,<br>liberate your vision.";
+        p.textContent = "Like any other muscle, your eyes need exercise to stay sharp. OcuFlow is your visual gym: enjoy guided light rehab sessions, 'visual cardio' to tone your eye muscles, boost concentration, and tracking tools to turn your screen time into self-care.";
+        startBtn.textContent = "Start for Free";
+        if(navDash) navDash.textContent = "Dashboard";
+        if(navLogin) navLogin.textContent = "Login";
+      } else {
+        h1.innerHTML = "Musclez votre regard,<br>libérez votre vision.";
+        p.textContent = "Comme tout autre muscle, vos yeux ont besoin d'exercice pour rester performants. OcuFlow est votre salle de sport visuelle : profitez de sessions guidées de rééducation légère, d'exercices de 'cardio-visuel' pour tonifier vos muscles oculaires, booster votre concentration et d'outils de suivi pour transformer votre temps d'écran en moment de soin.";
+        startBtn.textContent = "Commencer Gratuitement";
+        if(navDash) navDash.textContent = "Tableau de Bord";
+        if(navLogin) navLogin.textContent = "Connexion";
+      }
+    }
+
+    logoutBtn.onclick = () => {
+      localStorage.removeItem('ocuflow_token');
+      localStorage.removeItem('ocuflow_user');
+      window.location.reload();
+    };
+
+    checkAuth();
+  </script>
+</body>
+</html>

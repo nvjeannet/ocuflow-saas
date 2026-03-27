@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OcuFlow PRO — Bilan Visual</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    .test-container {
+      max-width: 600px; margin: 40px auto; padding: 40px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 30px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .test-screen { display: none; }
+    .test-screen.active { display: block; animation: fadeIn 0.5s ease-out; }
+    
+    .target-box {
+      width: 200px; height: 200px; margin: 40px auto;
+      background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+      border-radius: 24px; display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; font-weight: 800; cursor: pointer; transition: all 0.2s;
+    }
+    .target-box:hover { border-color: var(--accent); scale: 1.05; }
+    
+    .result-score { font-size: 4rem; font-weight: 800; color: var(--accent-light); margin: 20px 0; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <nav>
+      <div class="logo" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">Ocu<span>Flow</span> PRO</div>
+      <a href="dashboard.html" class="btn btn-ghost">✕ Fermer</a>
+    </nav>
+
+    <div class="test-container">
+      <!-- Intro Screen -->
+      <div id="screen-intro" class="test-screen active">
+        <h2 style="margin-bottom:16px;">Test de Fatigue Visuelle</h2>
+        <p style="color:var(--muted);margin-bottom:30px;">Ce test mesure votre sensibilité aux contrastes pour détecter un éventuel surmenage oculaire.</p>
+        <div style="text-align:left;background:rgba(255,255,255,0.03);padding:20px;border-radius:18px;margin-bottom:30px;">
+          <p style="font-size:0.85rem;margin-bottom:8px;">✅ Instructions :</p>
+          <ul style="font-size:0.8rem;color:var(--muted);padding-left:20px;">
+            <li>Reculez de 50cm de votre écran.</li>
+            <li>Identifiez la lettre au centre du carré.</li>
+            <li>Cliquez sur le carré pour passer à l'étape suivante.</li>
+            <li>Arrêtez quand vous ne distinguez plus la lettre.</li>
+          </ul>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="startTest()">Commencer le Bilan</button>
+      </div>
+
+      <!-- Test Screen -->
+      <div id="screen-test" class="test-screen">
+        <p id="step-label" style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Étape 1/10</p>
+        <div class="target-box" id="target-box" onclick="nextStep()">
+          <span id="target-letter">A</span>
+        </div>
+        <p style="color:var(--muted);font-size:0.8rem;">Cliquez sur la lettre si vous la voyez distinctement.</p>
+        <button class="btn btn-ghost" style="margin-top:40px;width:100%;" onclick="failTest()">Je ne vois plus rien</button>
+      </div>
+
+      <!-- Result Screen -->
+      <div id="screen-result" class="test-screen">
+        <h2 id="result-title">Analyse Terminée</h2>
+        <div class="result-score" id="result-score">0%</div>
+        <p id="result-desc" style="color:var(--muted);margin-bottom:32px;"></p>
+        <div id="result-badge" style="background:var(--panel);padding:20px;border-radius:20px;margin-bottom:32px;display:flex;align-items:center;gap:15px;text-align:left;">
+          <div id="result-icon" style="font-size:2rem;">🛡️</div>
+          <div>
+            <h4 id="rec-title">Protection Excellente</h4>
+            <p id="rec-desc" style="font-size:0.75rem;color:var(--muted);">Vos yeux supportent bien la fatigue actuelle.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="window.location.href='dashboard.html'">Retour au Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script>
+    StorageManager.init();
+    
+    let currentStep = 0;
+    const maxSteps = 15;
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    
+    function startTest() {
+      document.querySelectorAll('.test-screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-test').classList.add('active');
+      currentStep = 1;
+      updateStep();
+    }
+
+    function updateStep() {
+      if (currentStep > maxSteps) { finishTest(100); return; }
+      
+      const letter = letters[Math.floor(Math.random() * letters.length)];
+      const target = document.getElementById('target-letter');
+      const box = document.getElementById('target-box');
+      
+      target.textContent = letter;
+      document.getElementById('step-label').textContent = `Niveau de contraste : ${currentStep}/${maxSteps}`;
+      
+      // Decrease contrast: opacity = 1 - (step / maxSteps)
+      const opacity = Math.pow(0.7, currentStep); // Exponential decrease for "pro" feel
+      target.style.opacity = opacity;
+    }
+
+    function nextStep() {
+      currentStep++;
+      updateStep();
+    }
+
+    function failTest() {
+      const score = Math.round(((currentStep - 1) / maxSteps) * 100);
+      finishTest(score);
+    }
+
+    function finishTest(score) {
+      document.querySelectorAll('.test-screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-result').classList.add('active');
+      
+      const scoreEl = document.getElementById('result-score');
+      scoreEl.textContent = score + "%";
+      
+      const title = document.getElementById('result-title');
+      const desc = document.getElementById('result-desc');
+      const recTitle = document.getElementById('rec-title');
+      const recDesc = document.getElementById('rec-desc');
+      const recIcon = document.getElementById('result-icon');
+      
+      if (score >= 80) {
+        title.textContent = "Vue d'Aigle !";
+        desc.textContent = "Votre sensibilité aux contrastes est exceptionnelle.";
+        recTitle.textContent = "Santé Optimale";
+        recDesc.textContent = "Continuez vos routines préventives 1x par jour.";
+        recIcon.textContent = "🦅";
+      } else if (score >= 50) {
+        title.textContent = "Fatigue Modérée";
+        desc.textContent = "Vos yeux commencent à montrer des signes de tension.";
+        recTitle.textContent = "Pause Recommandée";
+        recDesc.textContent = "Faites une séance de 5 min (Mode Relaxation) maintenant.";
+        recIcon.textContent = "⚖️";
+      } else {
+        title.textContent = "Alerte Fatigue";
+        desc.textContent = "Votre score est bas. Vos yeux sont probablement très fatigués.";
+        recTitle.textContent = "Repos Immédiat";
+        recDesc.textContent = "Éteignez vos écrans pendant 20 minutes et faites du palmage.";
+        recIcon.textContent = "⚠️";
+      }
+      
+      // Save result to data
+      if (!StorageManager.data.visionTests) StorageManager.data.visionTests = [];
+      StorageManager.data.visionTests.push({ date: new Date().toISOString(), score });
+      StorageManager.save();
+    }
+  </script>
+</body>
+</html>

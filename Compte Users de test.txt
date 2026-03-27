@@ -1,0 +1,10 @@
+Compte Gestionnaire (PRO) :
+
+Email : gestion@ocuflow.com
+Mot de passe : OcuFlow2026!
+Cet utilisateur a accès à la gestion d'équipe et au suivi de progression.
+Compte Admin Plateforme :
+
+Email : admin@ocuflow.com
+Mot de passe : AdminFlow2026#
+Cet utilisateur a le rôle 'admin' pour la gestion globale.

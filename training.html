@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OcuFlow — Entraînement</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="background:#000;overflow:hidden;">
+  <div id="arena">
+    <div id="dot"><div class="dot-inner" id="dot-inner"></div></div>
+    
+    <div id="overlay" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;background:radial-gradient(circle at center, rgba(17,24,39,0.98) 0%, rgba(8,12,16,1) 100%);transition:opacity .6s;text-align:center;padding:40px;backdrop-filter:blur(20px);">
+      <div id="countdown" style="font-family:'Syne',sans-serif;font-size:6rem;font-weight:800;background:var(--gradient-primary);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(59,130,246,0.3));">3</div>
+      <div id="ex-name" style="font-family:'Outfit',sans-serif;font-size:1.8rem;color:white;font-weight:800;margin-bottom:30px;letter-spacing:-0.02em;">Préparation...</div>
+      
+      <div style="width:60px;height:2px;background:var(--accent);margin-bottom:30px;opacity:0.3;"></div>
+      
+      <div id="tip-container" style="max-width:450px;padding:30px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:24px;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent);"></div>
+        <span style="display:block;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:12px;font-weight:800;">Conseil Santé</span>
+        <div id="tip-box" style="font-size:1rem;color:var(--text);line-height:1.6;font-weight:500;"></div>
+      </div>
+    </div>
+
+    <div id="controls" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:200;opacity:0;transition:opacity .3s;">
+      <button class="btn btn-ghost" id="pause-btn">⏸ Pause</button>
+      <button class="btn btn-ghost" id="stop-btn">✕ Quitter</button>
+    </div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/movements.js"></script>
+  <script>
+    StorageManager.init();
+    const data = StorageManager.data;
+    const routines = StorageManager.getRoutines();
+    const routine = routines.find(r => r.id === data.currentRoutineId) || routines[0];
+    const movements = MOVEMENTS_DATA.filter(m => routine.exs.includes(m.id));
+
+    let state = {
+      running: false, paused: false, elapsed: 0, 
+      movementIdx: 0, movementTime: 0, movementDur: data.totalDuration / movements.length,
+      globalPhase: 0, lastTime: 0,
+      renderX: window.innerWidth/2, renderY: window.innerHeight/2
+    };
+
+    const dot = document.getElementById('dot');
+    const dotInner = document.getElementById('dot-inner');
+    const overlay = document.getElementById('overlay');
+    const countdownEl = document.getElementById('countdown');
+    const exNameEl = document.getElementById('ex-name');
+
+    // Start Countdown
+    let cd = 3;
+    const timer = setInterval(() => {
+      cd--;
+      if(cd > 0) countdownEl.textContent = cd;
+      else {
+        clearInterval(timer);
+        startSession();
+      }
+    }, 1000);
+
+    function startSession() {
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.style.display = 'none', 500);
+      state.running = true;
+      state.lastTime = performance.now();
+
+      // Start Ambiance
+      SoundManager.init();
+      SoundManager.startAmbiance(StorageManager.data.ambianceType);
+
+      requestAnimationFrame(loop);
+      
+      // Wake Lock
+      if('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(()=>{});
+    }
+
+    function loop(ts) {
+      if(!state.running || state.paused) return;
+      const dt = (ts - state.lastTime) / 1000;
+      state.lastTime = ts;
+      state.elapsed += dt;
+      state.movementTime += dt;
+      state.globalPhase += dt * data.speed * 0.9;
+
+      if(state.movementTime >= state.movementDur) {
+        state.movementIdx++;
+        state.movementTime = 0;
+        if(state.movementIdx >= movements.length) { finishSession(); return; }
+        announceNextExercise();
+        
+        // Spatial Beep
+        const pan = Math.sin(state.globalPhase);
+        SoundManager.playSpatialBeep(440, 0.2, data.spatialAudio ? pan : 0);
+      }
+
+      const W = window.innerWidth, H = window.innerHeight;
+      const cur = movements[state.movementIdx];
+      const pos = cur.fn(state.globalPhase, W, H);
+
+      // Simple Lerp for smoothness
+      state.renderX += (pos.x - state.renderX) * cur.lp;
+      state.renderY += (pos.y - state.renderY) * cur.lp;
+
+      dot.style.left = state.renderX + 'px';
+      dot.style.top = state.renderY + 'px';
+      
+      const sz = pos.sz ? data.dotSize * pos.sz : data.dotSize;
+      dot.style.width = sz + 'px';
+      dot.style.height = sz + 'px';
+
+      if(state.elapsed < data.totalDuration) requestAnimationFrame(loop);
+      else finishSession();
+    }
+
+    const TIPS = [
+      "Clignez des yeux régulièrement pour maintenir une bonne hydratation naturelle.",
+      "La règle 20-20-20 : toutes les 20 minutes, fixez un point à 6 mètres pendant 20 secondes.",
+      "Assurez-vous d'avoir un éclairage suffisant, idéalement sans reflets directs sur votre écran.",
+      "Gardez votre dos droit et vos pieds à plat au sol pour une circulation optimale.",
+      "Respirez profondément et relâchez vos épaules pour détendre tout le système visuel.",
+      "Ajustez la luminosité de votre écran pour qu'elle corresponde à l'ambiance de la pièce.",
+      "Pensez à faire des pauses loin de tout écran au moins 5 minutes chaque heure.",
+      "Le palmage (couvrir les yeux avec les mains) est idéal pour reposer la rétine en plein jour.",
+      "Une alimentation riche en Vitamine A et Oméga-3 soutient la santé de vos yeux sur le long terme."
+    ];
+
+    function showRandomTip() {
+      const tipBox = document.getElementById('tip-box');
+      if(tipBox) tipBox.textContent = "Conseil : " + TIPS[Math.floor(Math.random()*TIPS.length)];
+    }
+    showRandomTip();
+
+    function speak(text) {
+      if (!StorageManager.data.audioEnabled) return;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      utterance.rate = 0.9;
+      speechSynthesis.speak(utterance);
+    }
+
+    function playBeep(freq = 440, dur = 0.1) {
+      if (!StorageManager.data.audioEnabled) return;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.1, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+      osc.start();
+      osc.stop(ctx.currentTime + dur);
+    }
+
+    function announceNextExercise() {
+      const cur = movements[state.movementIdx];
+      playBeep(660, 0.15);
+      speak(cur.name);
+      // Update UI if needed
+    }
+
+    function finishSession() {
+      state.running = false;
+      playBeep(880, 0.3);
+      speak("Session terminée. Félicitations !");
+      
+      // Celebration (Simulée par overlay ou CSS)
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+      countdownEl.innerHTML = '✨';
+      exNameEl.textContent = 'Session Terminée !';
+      document.getElementById('tip-box').textContent = "Excellent travail pour vos yeux aujourd'hui.";
+
+      const mode = (data.currentRoutineId === 'free_session') ? 'free' : 'routine';
+      const redirectUrl = `config.html?mode=${mode}`;
+      
+      StorageManager.saveSession(data.totalDuration, routine.exs).then(() => {
+        setTimeout(() => window.location.href = redirectUrl, 3000);
+      }).catch(() => {
+        setTimeout(() => window.location.href = redirectUrl, 3000);
+      });
+    }
+
+    document.getElementById('stop-btn').onclick = () => {
+      const mode = (data.currentRoutineId === 'free_session') ? 'free' : 'routine';
+      window.location.href = `config.html?mode=${mode}`;
+    };
+    document.getElementById('pause-btn').onclick = () => {
+      state.paused = !state.paused;
+      document.getElementById('pause-btn').textContent = state.paused ? '▶ Reprendre' : '⏸ Pause';
+      if(!state.paused) { state.lastTime = performance.now(); requestAnimationFrame(loop); }
+    };
+
+    // Show controls on move
+    window.onmousemove = () => {
+      const ctrl = document.getElementById('controls');
+      ctrl.style.opacity = '1';
+      clearTimeout(window.ctrlTimer);
+      window.ctrlTimer = setTimeout(() => ctrl.style.opacity = '0', 2000);
+    };
+  </script>
+</body>
+</html>
