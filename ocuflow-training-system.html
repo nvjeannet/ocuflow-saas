@@ -58,8 +58,9 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);
 header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;
   height:var(--header-h);flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);
   z-index:200;padding-left:calc(20px + var(--safe-left));padding-right:calc(20px + var(--safe-right));}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.18rem;letter-spacing:-.02em;}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.18rem;letter-spacing:-.02em;display:flex;flex-direction:column;line-height:1;}
 .logo span{color:var(--accent);}
+.logo-slogan{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-top:2px;font-family:'DM Mono',monospace;}
 .logo-sub{font-size:.57rem;color:var(--muted);margin-top:1px;}
 .header-right{display:flex;gap:8px;align-items:center;}
 
@@ -437,7 +438,7 @@ body.fullscreen #fs-controls.fs-visible~#fs-hint{opacity:0;}
 <!-- Header -->
 <header>
   <div>
-    <div class="logo">Ocu<span>Flow</span></div>
+    <div class="logo">Ocu<span>Flow</span><div class="logo-slogan">La Gymnastique Oculaire</div></div>
     <div class="logo-sub">Exercice oculaire <span id="wakelock-dot"></span></div>
   </div>
   <div class="header-right">
