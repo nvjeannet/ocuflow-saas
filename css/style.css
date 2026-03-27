@@ -94,8 +94,9 @@ nav {
   border-bottom: 1px solid var(--border);
 }
 
-.logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
+.logo { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; display: flex; flex-direction: column; line-height: 1; }
 .logo span { background: var(--gradient-vivid); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.logo-slogan { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-top: 2px; font-family: 'Plus Jakarta Sans', sans-serif; }
 
 .hero { padding: 100px 0 80px; text-align: center; }
 .hero h1 {
