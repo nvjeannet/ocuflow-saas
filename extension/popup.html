@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --accent: #3b82f6;
+      --bg: #0f172a;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    body {
+      width: 280px;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .logo { font-weight: 800; font-size: 1.1rem; }
+    .logo span { color: var(--accent); }
+    
+    .status-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8rem; }
+    .stat-val { font-weight: 700; color: var(--accent); }
+    
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: 0.2s;
+    }
+    .btn:hover { opacity: 0.9; transform: scale(0.98); }
+    .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); margin-top: 8px; }
+    
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 0.85rem; }
+    
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px; width: 16px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--accent); }
+    input:checked + .slider:before { transform: translateX(18px); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">Ocu<span>Flow</span></div>
+    <div id="user-level" style="font-size:0.7rem; background:var(--accent); padding:2px 8px; border-radius:10px; font-weight:800;">LVL 1</div>
+  </div>
+
+  <div class="status-card">
+    <div class="stat-row">
+      <span>Prochaine pause</span>
+      <span class="stat-val" id="next-break">--:--</span>
+    </div>
+    <div class="stat-row">
+      <span>Auto-Rappels</span>
+      <label class="switch">
+        <input type="checkbox" id="reminder-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn" id="focus-mode-btn">Activer Focus Mode</button>
+  <button class="btn btn-ghost" id="open-dashboard">Tableau de Bord</button>
+
+  <div style="margin-top:16px; font-size:0.65rem; color:var(--muted); text-align:center;">
+    Gardez vos yeux frais. OcuFlow veille.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

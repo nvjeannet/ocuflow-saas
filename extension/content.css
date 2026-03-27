@@ -1,0 +1,7 @@
+/* OcuFlow Extension Styles */
+#ocuflow-focus-overlay {
+  opacity: 0;
+}
+body.ocuflow-focus-active #ocuflow-focus-overlay {
+  opacity: 1;
+}
