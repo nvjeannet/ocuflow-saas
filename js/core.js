@@ -81,6 +81,20 @@ const StorageManager = {
       delete this.data.remindersEnabled;
     }
     this.initReminders();
+    this.fetchTeamSettings();
+  },
+
+  async fetchTeamSettings() {
+    const token = localStorage.getItem('ocuflow_token');
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/auth/team/settings`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        this.teamSettings = await res.json();
+      }
+    } catch(e) {}
   },
 
   applyTheme() {
@@ -99,10 +113,19 @@ const StorageManager = {
 
   checkReminders() {
     const r = this.data.reminders;
-    if (!r.enabled) return;
-
     const now = new Date();
     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const day = now.getDay();
+
+    // 1. Check Global Team Reminders
+    if (this.teamSettings && this.teamSettings.fixedTimes && this.teamSettings.days) {
+      if (this.teamSettings.days.includes(day) && this.teamSettings.fixedTimes.includes(timeStr)) {
+        this.sendNotification("Rappel d'Équipe 📢", "C'est l'heure de la pause OcuFlow collective !");
+      }
+    }
+
+    // 2. Personal Reminders
+    if (!r || !r.enabled) return;
 
     if (r.type === 'interval') {
       const elapsed = (now.getTime() - r.lastIntervalNotif) / 60000;

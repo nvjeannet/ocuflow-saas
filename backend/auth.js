@@ -93,6 +93,37 @@ router.get('/team/members', auth, async (req, res) => {
   }
 });
 
+// RÉCUPÉRER LES RÉGLAGES DU CLUB (PRO)
+router.get('/team/settings', auth, async (req, res) => {
+  const masterId = req.user.parent_id || req.user.id;
+  try {
+    const result = await db.query('SELECT settings FROM clubs WHERE owner_id = ?', [masterId]);
+    if (result.rows.length > 0) {
+      res.json(result.rows[0].settings || {});
+    } else {
+      res.json({});
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors de la récupération des réglages.' });
+  }
+});
+
+// METTRE À JOUR LES RÉGLAGES DU CLUB (PRO OWNER UNIQUEMENT)
+router.post('/team/settings', auth, async (req, res) => {
+  const masterId = req.user.id;
+  const { settings } = req.body;
+  try {
+    const result = await db.query('UPDATE clubs SET settings = ? WHERE owner_id = ?', [JSON.stringify(settings), masterId]);
+    if (result.rows.affectedRows > 0) {
+      res.json({ message: 'Réglages mis à jour.' });
+    } else {
+      res.status(403).json({ error: 'Non autorisé ou club non trouvé.' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur lors de la mise à jour.' });
+  }
+});
+
 // SOUMETTRE UN AVIS (UTILISATEUR CONNECTÉ)
 router.post('/testimonials', auth, async (req, res) => {
   const { content } = req.body;
