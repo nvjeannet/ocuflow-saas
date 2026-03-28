@@ -46,7 +46,9 @@
       <div class="nav-item" onclick="showTab('partners')">🤝 Partenaires</div>
       <div class="nav-item" onclick="showTab('testimonials')">⭐ Avis Clients</div>
       <div class="nav-item" onclick="showTab('pricing')">💰 Tarifs & TVA</div>
+      <div class="nav-item" onclick="showTab('movements')">🏋️ Exercices</div>
       <div class="nav-item" onclick="showTab('routines')">🌀 CMS Routines</div>
+      <div class="nav-item" onclick="showTab('tips')">💡 Tips & Conseils</div>
       <div class="nav-item" onclick="showTab('logs')">📜 Audit Logs</div>
     </nav>
     <div style="margin-top:auto; padding-top:40px; border-top:1px solid var(--border);">
@@ -61,16 +63,16 @@
       
       <div class="stats-grid">
         <div class="stat-box">
-          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Revenu Total</span>
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">CA Total</span>
           <div class="stat-val" id="stat-total-revenue">--</div>
         </div>
         <div class="stat-box">
-          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Utilisateurs</span>
-          <div class="stat-val" id="stat-total-users">--</div>
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">ARR (Revenu Annuel)</span>
+          <div class="stat-val" id="stat-arr" style="color:var(--accent);">--</div>
         </div>
         <div class="stat-box">
-          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Abonnés Premium</span>
-          <div class="stat-val" id="stat-premium-users">--</div>
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Premium / PRO</span>
+          <div class="stat-val"><span id="stat-premium-users">--</span> / <span id="stat-pro-users" style="color:var(--accent);">--</span></div>
         </div>
         <div class="stat-box">
           <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Séances du jour</span>
@@ -195,6 +197,27 @@
       </div>
     </div>
 
+    <div id="tab-movements" class="tab-content" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+        <h1>Bibliothèque de Mouvements</h1>
+        <button class="btn btn-primary" onclick="openMovementModal()">+ Ajouter un exercice</button>
+      </div>
+      <div class="admin-card">
+        <table id="table-movements">
+          <thead>
+            <tr>
+              <th>Icon</th>
+              <th>Nom</th>
+              <th>Slug (Code)</th>
+              <th>Catégorie</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody><!-- JS --></tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Tab: CMS Routines -->
     <div id="tab-routines" class="tab-content" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
@@ -210,6 +233,25 @@
               <th>Exercices</th>
               <th>Durée (s)</th>
               <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody><!-- JS --></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-tips" class="tab-content" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+        <h1>Gestion des Tips (Dashboard)</h1>
+        <button class="btn btn-primary" onclick="openTipModal()">+ Nouveau Conseil</button>
+      </div>
+      <div class="admin-card">
+        <table id="table-tips">
+          <thead>
+            <tr>
+              <th>Contenu</th>
+              <th>Catégorie</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -293,9 +335,10 @@
     }
 
     function renderHome(stats) {
-      document.getElementById('stat-total-revenue').textContent = stats.totalRevenue + " XAF";
-      document.getElementById('stat-total-users').textContent = stats.totalUsers;
+      document.getElementById('stat-total-revenue').textContent = (stats.totalRevenue || 0) + " XAF";
+      document.getElementById('stat-arr').textContent = (stats.arr || 0) + " XAF";
       document.getElementById('stat-premium-users').textContent = stats.premiumUsers;
+      document.getElementById('stat-pro-users').textContent = stats.proUsers;
       document.getElementById('stat-sessions-today').textContent = stats.sessionsToday;
     }
 
@@ -362,15 +405,40 @@
           <tr>
             <td style="font-size:0.7rem;">${new Date(t.created_at).toLocaleDateString()}</td>
             <td>${t.email || 'Anonyme'}</td>
-            <td style="max-width:300px;font-style:italic;">"${t.content}"</td>
+            <td style="max-width:300px;font-style:italic;">"${t.content}"<br><span style="color:var(--accent); font-size:0.75rem;">${t.reply_text ? 'Réponse : ' + t.reply_text : ''}</span></td>
             <td><span class="status-pill status-${t.status}">${t.status}</span></td>
             <td>
-              ${t.status === 'pending' ? `
-                <button class="btn btn-primary" style="font-size:0.7rem;padding:4px 10px;" onclick="moderateTestimonial(${t.id}, 'approved')">Approuver</button>
-                <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 10px;color:red;" onclick="moderateTestimonial(${t.id}, 'rejected')">Refuser</button>
-              ` : `
-                <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 10px;color:red;" onclick="deleteTestimonial(${t.id})">Supprimer</button>
-              `}
+              <div style="display:flex; gap:4px;">
+                ${t.status === 'pending' ? `
+                  <button class="btn btn-primary" style="font-size:0.7rem;padding:4px 8px;" onclick="moderateTestimonial(${t.id}, 'approved')">Approuver</button>
+                  <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 8px;color:red;" onclick="moderateTestimonial(${t.id}, 'rejected')">Refuser</button>
+                ` : `
+                  <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 8px;" onclick="openReplyModal(${t.id})">💬 Répondre</button>
+                  <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 8px;color:red;" onclick="deleteTestimonial(${t.id})">🗑️</button>
+                `}
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } else if(tab === 'movements') {
+        tbody.innerHTML = data.map(m => `
+          <tr>
+            <td style="font-size:1.2rem;">${m.icon}</td>
+            <td><b>${m.name}</b></td>
+            <td><code>${m.slug}</code></td>
+            <td><span class="status-pill status-approved">${m.category}</span></td>
+            <td>
+              <button class="btn btn-ghost" style="font-size:0.75rem;" onclick='openMovementModal(${JSON.stringify(m)})'>✏️</button>
+            </td>
+          </tr>
+        `).join('');
+      } else if(tab === 'tips') {
+        tbody.innerHTML = data.map(t => `
+          <tr>
+            <td>${t.content}</td>
+            <td>${t.category}</td>
+            <td>
+              <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deleteTip(${t.id})">🗑️</button>
             </td>
           </tr>
         `).join('');
@@ -410,7 +478,7 @@
             <td><span class="status-pill status-approved" style="text-transform:uppercase;">${t.plan_type}</span></td>
             <td><b>${t.price} ${t.currency || 'XAF'}</b></td>
             <td><span class="status-pill status-${t.status === 'active' ? 'approved' : 'pending'}">${t.status}</span></td>
-            <td>${new Date(t.end_date).toLocaleDateString()}</td>
+            <td>${t.txn_id ? `<a href="https://moneroo.com/t/${t.txn_id}" target="_blank" style="color:var(--accent); font-size:0.7rem;">Voir Reçu ↗</a>` : new Date(t.end_date).toLocaleDateString()}</td>
           </tr>
         `).join('');
       } else if (tab === 'routines') {
@@ -563,6 +631,113 @@
         body: JSON.stringify(data)
       });
       if(res.ok) { closeModal(); loadData('partners'); }
+    }
+
+    async function deleteMovement(id) {
+       if(!confirm("Supprimer ce mouvement ?")) return;
+       await fetch(`${API_ADMIN}/movements/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      loadData('movements');
+    }
+
+    async function deleteTip(id) {
+       if(!confirm("Supprimer ce conseil ?")) return;
+       await fetch(`${API_ADMIN}/tips/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      loadData('tips');
+    }
+
+    // MOVEMENT MODAL
+    function openMovementModal(m = null) {
+      currentEditId = m ? m.id : null;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = m ? "Modifier Exercice" : "Nouvel Exercice";
+      
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `
+        <div style="display:grid; grid-template-columns: 1fr 3fr; gap:12px;">
+          <input type="text" id="m-icon" placeholder="Icon" value="${m ? m.icon : ''}" class="btn btn-ghost" style="width:100%; padding:12px; font-size:1.5rem;">
+          <input type="text" id="m-name" placeholder="Nom de l'exercice" value="${m ? m.name : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        </div>
+        <input type="text" id="m-slug" placeholder="Slug (Code)" value="${m ? m.slug : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        <select id="m-cat" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+           <option value="pursuit" ${m && m.category==='pursuit' ? 'selected' : ''}>Poursuite</option>
+           <option value="saccade" ${m && m.category==='saccade' ? 'selected' : ''}>Saccade</option>
+           <option value="accom" ${m && m.category==='accom' ? 'selected' : ''}>Accommodation</option>
+           <option value="relax" ${m && m.category==='relax' ? 'selected' : ''}>Relaxation</option>
+        </select>
+        <textarea id="m-desc" placeholder="Description" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:80px;">${m ? m.description : ''}</textarea>
+      `;
+      document.getElementById('modal-save').onclick = saveMovement;
+    }
+
+    async function saveMovement() {
+      const data = {
+        name: document.getElementById('m-name').value,
+        icon: document.getElementById('m-icon').value,
+        slug: document.getElementById('m-slug').value,
+        category: document.getElementById('m-cat').value,
+        description: document.getElementById('m-desc').value
+      };
+      const method = currentEditId ? 'PUT' : 'POST';
+      const url = currentEditId ? `${API_ADMIN}/movements/${currentEditId}` : `${API_ADMIN}/movements`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data)
+      });
+      if(res.ok) { closeModal(); loadData('movements'); }
+    }
+
+    // TIPS MODAL
+    function openTipModal() {
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = "Nouveau Conseil";
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `
+        <textarea id="tip-content" placeholder="Contenu du conseil" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:100px;"></textarea>
+        <input type="text" id="tip-cat" placeholder="Catégorie" value="general" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+      `;
+      document.getElementById('modal-save').onclick = saveTip;
+    }
+
+    async function saveTip() {
+      const data = {
+        content: document.getElementById('tip-content').value,
+        category: document.getElementById('tip-cat').value
+      };
+      const res = await fetch(`${API_ADMIN}/tips`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data)
+      });
+      if(res.ok) { closeModal(); loadData('tips'); }
+    }
+
+    // REPLY MODAL
+    function openReplyModal(id) {
+      currentEditId = id;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = "Répondre à l'avis";
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `
+        <textarea id="reply-text" placeholder="Votre réponse officielle..." class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:100px;"></textarea>
+      `;
+      document.getElementById('modal-save').onclick = saveReply;
+    }
+
+    async function saveReply() {
+      const reply_text = document.getElementById('reply-text').value;
+      const res = await fetch(`${API_ADMIN}/testimonials/${currentEditId}/reply`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ reply_text })
+      });
+      if(res.ok) { closeModal(); loadData('testimonials'); }
     }
 
     // PRICING MODAL

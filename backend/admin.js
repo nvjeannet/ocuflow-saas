@@ -62,15 +62,22 @@ router.get('/analytics', auth, isAdmin, async (req, res) => {
 router.get('/stats', auth, isAdmin, async (req, res) => {
   try {
     const usersCount = await db.query('SELECT COUNT(*) as count FROM users');
-    const premiumCount = await db.query('SELECT COUNT(*) as count FROM users WHERE is_premium = 1');
+    const premiumCount = await db.query('SELECT COUNT(*) as count FROM users WHERE is_premium = 1 AND role != "pro"');
+    const proCount = await db.query('SELECT COUNT(*) as count FROM users WHERE role = "pro"');
+    
+    // Revenu total et ARR (Revenu Mensuel x 12)
     const totalRev = await db.query('SELECT SUM(price) as total FROM subscriptions WHERE status = "active"');
-    const sessionsToday = await db.query('SELECT COUNT(*) as count FROM sessions WHERE DATE(timestamp) = CURDATE()');
+    const revLastMonth = await db.query('SELECT SUM(price) as total FROM subscriptions WHERE start_date > DATE_SUB(NOW(), INTERVAL 30 DAY) AND status = "active"');
+    
+    const arr = (revLastMonth.rows[0].total || 0) * 12;
 
     res.json({
       totalUsers: usersCount.rows[0].count,
       premiumUsers: premiumCount.rows[0].count,
+      proUsers: proCount.rows[0].count,
       totalRevenue: totalRev.rows[0].total || 0,
-      sessionsToday: sessionsToday.rows[0].count
+      arr: arr,
+      sessionsToday: (await db.query('SELECT COUNT(*) as count FROM sessions WHERE DATE(timestamp) = CURDATE()')).rows[0].count
     });
   } catch (err) { res.status(500).json({ error: 'Erreur stats.' }); }
 });
@@ -246,6 +253,81 @@ router.delete('/pricing/:id', auth, isAdmin, async (req, res) => {
     await logAction(req.user.id, 'DELETE_PRICING', req.params.id, {});
     res.json({ message: 'Tarif supprimé.' });
   } catch (err) { res.status(500).json({ error: 'Erreur suppression tarif.' }); }
+});
+
+// 🏋️ CMS : Gestion de la Bibliothèque de Mouvements
+router.get('/movements', auth, isAdmin, async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM movements ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Erreur CMS mouvements.' }); }
+});
+
+router.post('/movements', auth, isAdmin, async (req, res) => {
+  const { name, icon, slug, description, category } = req.body;
+  try {
+    const result = await db.query(
+      'INSERT INTO movements (name, icon, slug, description, category) VALUES (?, ?, ?, ?, ?)',
+      [name, icon, slug, description, category]
+    );
+    await logAction(req.user.id, 'CREATE_MOVEMENT', result.insertId, { name });
+    res.status(201).json({ message: 'Mouvement ajouté.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur ajout mouvement.' }); }
+});
+
+router.put('/movements/:id', auth, isAdmin, async (req, res) => {
+  const { name, icon, slug, description, category } = req.body;
+  try {
+    await db.query(
+      'UPDATE movements SET name=?, icon=?, slug=?, description=?, category=? WHERE id=?',
+      [name, icon, slug, description, category, req.params.id]
+    );
+    await logAction(req.user.id, 'MODIFY_MOVEMENT', req.params.id, { name });
+    res.json({ message: 'Mouvement mis à jour.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur modification mouvement.' }); }
+});
+
+// 💡 CMS : Gestion des Tips
+router.get('/tips', auth, isAdmin, async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM tips ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Erreur tips.' }); }
+});
+
+router.post('/tips', auth, isAdmin, async (req, res) => {
+  const { content, category } = req.body;
+  try {
+    const result = await db.query('INSERT INTO tips (content, category) VALUES (?, ?)', [content, category]);
+    await logAction(req.user.id, 'CREATE_TIP', result.insertId, { content });
+    res.status(201).json({ message: 'Tip ajouté.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur ajout tip.' }); }
+});
+
+// ⭐ RÉPONDRE AUX AVIS
+router.put('/testimonials/:id/reply', auth, isAdmin, async (req, res) => {
+  const { reply_text } = req.body;
+  try {
+    await db.query('UPDATE testimonials SET reply_text = ?, replied_at = NOW() WHERE id = ?', [reply_text, req.params.id]);
+    await logAction(req.user.id, 'REPLY_TESTIMONIAL', req.params.id, { reply_text });
+    res.json({ message: 'Réponse envoyée.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur réponse avis.' }); }
+});
+
+router.delete('/movements/:id', auth, isAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM movements WHERE id = ?', [req.params.id]);
+    await logAction(req.user.id, 'DELETE_MOVEMENT', req.params.id, {});
+    res.json({ message: 'Mouvement supprimé.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur suppression mouvement.' }); }
+});
+
+router.delete('/tips/:id', auth, isAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM tips WHERE id = ?', [req.params.id]);
+    await logAction(req.user.id, 'DELETE_TIP', req.params.id, {});
+    res.json({ message: 'Conseil supprimé.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur suppression tip.' }); }
 });
 
 module.exports = router;
