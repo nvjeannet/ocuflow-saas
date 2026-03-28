@@ -135,14 +135,15 @@ router.put('/routines/:id', auth, isAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur mise à jour routine.' }); }
 });
 
-// CHANGER LE STATUT PREMIUM D'UN UTILISATEUR (Mis à jour avec log)
-router.put('/users/:id/premium', auth, isAdmin, async (req, res) => {
-  const { is_premium } = req.body;
+// CHANGER LE PLAN D'UN UTILISATEUR
+router.put('/users/:id/plan', auth, isAdmin, async (req, res) => {
+  const { plan_type } = req.body; // 'free', 'premium', 'pro'
+  const is_premium = (plan_type !== 'free' ? 1 : 0);
   try {
-    await db.query('UPDATE users SET is_premium = ? WHERE id = ?', [is_premium, req.params.id]);
-    await logAction(req.user.id, 'UPDATE_USER_PREMIUM', req.params.id, { is_premium });
-    res.json({ message: 'Statut Premium mis à jour.' });
-  } catch (err) { res.status(500).json({ error: 'Erreur lors de la mise à jour du statut.' }); }
+    await db.query('UPDATE users SET is_premium = ?, role = ? WHERE id = ?', [is_premium, plan_type === 'pro' ? 'pro' : 'user', req.params.id]);
+    await logAction(req.user.id, 'UPDATE_USER_PLAN', req.params.id, { plan_type });
+    res.json({ message: 'Plan mis à jour.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur mise à jour plan.' }); }
 });
 
 // 🤝 GESTION DES PARTENAIRES
@@ -163,6 +164,18 @@ router.post('/partners', auth, isAdmin, async (req, res) => {
     await logAction(req.user.id, 'CREATE_PARTNER', result.insertId, { name });
     res.status(201).json({ message: 'Partenaire ajouté.' });
   } catch (err) { res.status(500).json({ error: 'Erreur ajout partenaire.' }); }
+});
+
+router.put('/partners/:id', auth, isAdmin, async (req, res) => {
+  const { name, manager, city, phone, address, email, website, logo_url, country_code } = req.body;
+  try {
+    await db.query(
+      'UPDATE partners SET name=?, manager=?, city=?, phone=?, address=?, email=?, website=?, logo_url=?, country_code=? WHERE id=?',
+      [name, manager, city, phone, address, email, website, logo_url, country_code, req.params.id]
+    );
+    await logAction(req.user.id, 'UPDATE_PARTNER', req.params.id, { name });
+    res.json({ message: 'Partenaire mis à jour.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur mise à jour partenaire.' }); }
 });
 
 router.delete('/partners/:id', auth, isAdmin, async (req, res) => {
@@ -190,6 +203,14 @@ router.put('/testimonials/:id/status', auth, isAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur modération avis.' }); }
 });
 
+router.delete('/testimonials/:id', auth, isAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM testimonials WHERE id = ?', [req.params.id]);
+    await logAction(req.user.id, 'DELETE_TESTIMONIAL', req.params.id, {});
+    res.json({ message: 'Avis supprimé.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur suppression avis.' }); }
+});
+
 // 💰 GESTION DES TARIFS
 router.get('/pricing', auth, isAdmin, async (req, res) => {
   try {
@@ -199,12 +220,32 @@ router.get('/pricing', auth, isAdmin, async (req, res) => {
 });
 
 router.put('/pricing/:id', auth, isAdmin, async (req, res) => {
-  const { price, vat_rate } = req.body;
+  const { price, vat_rate, plan_type, currency } = req.body;
   try {
-    await db.query('UPDATE pricing_rules SET price = ?, vat_rate = ? WHERE id = ?', [price, vat_rate, req.params.id]);
+    await db.query('UPDATE pricing_rules SET price = ?, vat_rate = ?, plan_type = ?, currency = ? WHERE id = ?', [price, vat_rate, plan_type, currency, req.params.id]);
     await logAction(req.user.id, 'MODIFY_PRICING', req.params.id, { price, vat_rate });
     res.json({ message: 'Tarif mis à jour.' });
   } catch (err) { res.status(500).json({ error: 'Erreur mise à jour tarif.' }); }
+});
+
+router.post('/pricing', auth, isAdmin, async (req, res) => {
+  const { country_code, plan_type, price, currency, vat_rate } = req.body;
+  try {
+    const result = await db.query(
+      'INSERT INTO pricing_rules (country_code, plan_type, price, currency, vat_rate) VALUES (?, ?, ?, ?, ?)',
+      [country_code, plan_type, price, currency, vat_rate]
+    );
+    await logAction(req.user.id, 'CREATE_PRICING', result.insertId, { country_code, plan_type });
+    res.status(201).json({ message: 'Tarif ajouté.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur ajout tarif.' }); }
+});
+
+router.delete('/pricing/:id', auth, isAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM pricing_rules WHERE id = ?', [req.params.id]);
+    await logAction(req.user.id, 'DELETE_PRICING', req.params.id, {});
+    res.json({ message: 'Tarif supprimé.' });
+  } catch (err) { res.status(500).json({ error: 'Erreur suppression tarif.' }); }
 });
 
 module.exports = router;

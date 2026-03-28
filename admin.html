@@ -174,7 +174,10 @@
     </div>
 
     <div id="tab-pricing" class="tab-content" style="display:none;">
-      <h1>Tarifs & Taxes par Pays</h1>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+        <h1>Tarifs & Taxes par Pays</h1>
+        <button class="btn btn-primary" onclick="openPricingModal()">+ Ajouter un tarif</button>
+      </div>
       <div class="admin-card">
         <table id="table-pricing">
           <thead>
@@ -258,9 +261,11 @@
 
     function showTab(tab) {
       document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => {
+        i.classList.remove('active');
+        if(i.getAttribute('onclick').includes(`'${tab}'`)) i.classList.add('active');
+      });
       document.getElementById('tab-' + tab).style.display = 'block';
-      event.target.classList.add('active');
       loadData(tab);
     }
 
@@ -340,10 +345,16 @@
           <tr>
             <td>${u.id}</td>
             <td>${u.email}</td>
-            <td><span class="status-pill ${u.is_premium ? 'status-approved' : 'status-pending'}">${u.is_premium ? 'PREMIUM' : 'FREE'}</span></td>
+            <td>
+              <select class="btn btn-ghost" style="font-size:0.7rem; padding:4px 8px;" onchange="updateUserPlan(${u.id}, this.value)">
+                <option value="free" ${!u.is_premium ? 'selected' : ''}>Gratuit</option>
+                <option value="premium" ${u.is_premium && u.role !== 'pro' ? 'selected' : ''}>Premium</option>
+                <option value="pro" ${u.role === 'pro' ? 'selected' : ''}>PRO</option>
+              </select>
+            </td>
             <td>${u.country_code || '??'}</td>
             <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : '—'}</td>
-            <td><button class="btn btn-ghost" style="font-size:0.7rem;" onclick="togglePremium(${u.id}, ${!u.is_premium})">Modifier Plan</button></td>
+            <td>-</td>
           </tr>
         `).join('');
       } else if(tab === 'testimonials') {
@@ -357,19 +368,24 @@
               ${t.status === 'pending' ? `
                 <button class="btn btn-primary" style="font-size:0.7rem;padding:4px 10px;" onclick="moderateTestimonial(${t.id}, 'approved')">Approuver</button>
                 <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 10px;color:red;" onclick="moderateTestimonial(${t.id}, 'rejected')">Refuser</button>
-              ` : '—'}
+              ` : `
+                <button class="btn btn-ghost" style="font-size:0.7rem;padding:4px 10px;color:red;" onclick="deleteTestimonial(${t.id})">Supprimer</button>
+              `}
             </td>
           </tr>
         `).join('');
       } else if(tab === 'partners') {
         tbody.innerHTML = data.map(p => `
           <tr>
-            <td><div style="width:30px;height:30px;background:#333;border-radius:50%;"></div></td>
+            <td><div style="width:30px;height:30px;background:#333;border-radius:50%; background-image:url('${p.logo_url}'); background-size:cover;"></div></td>
             <td><b>${p.name}</b></td>
             <td>${p.manager || '—'}</td>
             <td>${p.city}</td>
             <td>${p.country_code}</td>
-            <td><button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deletePartner(${p.id})">Supprimer</button></td>
+            <td style="display:flex; gap:8px;">
+               <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openPartnerModal(${JSON.stringify(p)})'>✏️</button>
+               <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deletePartner(${p.id})">🗑️</button>
+            </td>
           </tr>
         `).join('');
       } else if(tab === 'pricing') {
@@ -380,7 +396,10 @@
             <td>${p.price}</td>
             <td>${p.currency}</td>
             <td>${p.vat_rate}%</td>
-            <td><button class="btn btn-ghost" style="font-size:0.7rem;" onclick="modifyPrice(${p.id})">✏️</button></td>
+            <td style="display:flex; gap:8px;">
+              <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openPricingModal(${JSON.stringify(p)})'>✏️</button>
+              <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deletePricing(${p.id})">🗑️</button>
+            </td>
           </tr>
         `).join('');
       } else if (tab === 'transactions') {
@@ -488,14 +507,6 @@
       currentEditId = null;
     }
 
-    async function togglePremium(id, status) {
-      await fetch(`${API_ADMIN}/users/${id}/premium`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ is_premium: status })
-      });
-      loadData('users');
-    }
 
     async function moderateTestimonial(id, status) {
       await fetch(`${API_ADMIN}/testimonials/${id}/status`, {
@@ -513,6 +524,128 @@
         headers: { 'Authorization': `Bearer ${token}` }
       });
       loadData('partners');
+    }
+
+    // PARTNER MODAL
+    function openPartnerModal(p = null) {
+      currentEditId = p ? p.id : null;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = p ? "Modifier Partenaire" : "Nouveau Partenaire";
+      
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `
+        <input type="text" id="p-name" placeholder="Nom du partenaire" value="${p ? p.name : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        <input type="text" id="p-manager" placeholder="Manager" value="${p ? p.manager || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <input type="text" id="p-city" placeholder="Ville" value="${p ? p.city : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          <input type="text" id="p-country" placeholder="Pays (ex: GA)" value="${p ? p.country_code : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        </div>
+        <input type="email" id="p-email" placeholder="Email" value="${p ? p.email || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        <input type="text" id="p-logo" placeholder="URL Logo" value="${p ? p.logo_url || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+      `;
+      document.getElementById('modal-save').onclick = savePartner;
+    }
+
+    async function savePartner() {
+      const data = {
+        name: document.getElementById('p-name').value,
+        manager: document.getElementById('p-manager').value,
+        city: document.getElementById('p-city').value,
+        country_code: document.getElementById('p-country').value,
+        email: document.getElementById('p-email').value,
+        logo_url: document.getElementById('p-logo').value
+      };
+      const method = currentEditId ? 'PUT' : 'POST';
+      const url = currentEditId ? `${API_ADMIN}/partners/${currentEditId}` : `${API_ADMIN}/partners`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data)
+      });
+      if(res.ok) { closeModal(); loadData('partners'); }
+    }
+
+    // PRICING MODAL
+    function openPricingModal(p = null) {
+      currentEditId = p ? p.id : null;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = p ? "Modifier Tarif" : "Nouveau Tarif";
+      
+      const body = document.getElementById('modal-body');
+      const countries = [
+        {c:"GA", n:"Gabon"}, {c:"CM", n:"Cameroun"}, {c:"CI", n:"Côte d'Ivoire"}, 
+        {c:"SN", n:"Sénégal"}, {c:"CD", n:"RD Congo"}, {c:"CG", n:"Congo"},
+        {c:"BJ", n:"Bénin"}, {c:"TG", n:"Togo"}, {c:"BF", n:"Burkina Faso"},
+        {c:"ML", n:"Mali"}, {c:"NE", n:"Niger"}, {c:"TD", n:"Tchad"},
+        {c:"CF", n:"Centrafrique"}, {c:"GN", n:"Guinée"}, {c:"SC", n:"Seychelles"},
+        {c:"MU", n:"Maurice"}, {c:"MG", n:"Madagascar"}, {c:"KM", n:"Comores"},
+        {c:"DJ", n:"Djibouti"}, {c:"NG", n:"Nigeria"}, {c:"GH", n:"Ghana"},
+        {c:"KE", n:"Kenya"}, {c:"RW", n:"Rwanda"}, {c:"ZA", n:"Afrique du Sud"},
+        {c:"FR", n:"France"}
+      ];
+
+      body.innerHTML = `
+        <select id="pr-country" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+           <option value="">-- Choisir un pays --</option>
+           ${countries.map(c => `<option value="${c.c}" ${p && p.country_code===c.c ? 'selected' : ''}>${c.n} (${c.c})</option>`).join('')}
+        </select>
+        <select id="pr-type" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+           <option value="free" ${p && p.plan_type==='free' ? 'selected' : ''}>Gratuit</option>
+           <option value="premium" ${p && p.plan_type==='premium' ? 'selected' : ''}>Premium</option>
+           <option value="pro" ${p && p.plan_type==='pro' ? 'selected' : ''}>PRO</option>
+        </select>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <input type="number" id="pr-price" placeholder="Prix" value="${p ? p.price : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          <input type="text" id="pr-curr" placeholder="Devise" value="${p ? p.currency : 'XAF'}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        </div>
+        <input type="number" id="pr-vat" placeholder="TVA %" value="${p ? p.vat_rate : 0}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+      `;
+      document.getElementById('modal-save').onclick = savePricing;
+    }
+
+    async function savePricing() {
+      const data = {
+        country_code: document.getElementById('pr-country').value,
+        plan_type: document.getElementById('pr-type').value,
+        price: document.getElementById('pr-price').value,
+        currency: document.getElementById('pr-curr').value,
+        vat_rate: document.getElementById('pr-vat').value
+      };
+      const method = currentEditId ? 'PUT' : 'POST';
+      const url = currentEditId ? `${API_ADMIN}/pricing/${currentEditId}` : `${API_ADMIN}/pricing`;
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(data)
+      });
+      if(res.ok) { closeModal(); loadData('pricing'); }
+    }
+
+    async function deletePricing(id) {
+       if(!confirm("Supprimer ce tarif ?")) return;
+       await fetch(`${API_ADMIN}/pricing/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      loadData('pricing');
+    }
+
+    async function deleteTestimonial(id) {
+       if(!confirm("Supprimer cet avis ?")) return;
+       await fetch(`${API_ADMIN}/testimonials/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      loadData('testimonials');
+    }
+
+    async function updateUserPlan(userId, planType) {
+      await fetch(`${API_ADMIN}/users/${userId}/plan`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ plan_type: planType })
+      });
+      loadData('users');
     }
 
     function logout() {
