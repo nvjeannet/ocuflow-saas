@@ -41,12 +41,52 @@ router.get('/analytics', auth, isAdmin, async (req, res) => {
     const sessionsByDay = await db.query(
       'SELECT DATE(timestamp) as day, count(*) as count FROM sessions GROUP BY day ORDER BY day DESC LIMIT 14'
     );
-    // On extrait les exercices les plus pratiqués (MySQL 8.0+ JSON_TABLE)
+    // On extrait les exercices les plus pratiqués
     const popularExs = await db.query(
       'SELECT ex_id, count(*) as usage FROM sessions, JSON_TABLE(exercises, "$[*]" COLUMNS (ex_id INT PATH "$")) as jt GROUP BY ex_id ORDER BY usage DESC LIMIT 5'
     );
-    res.json({ sessionsByDay: sessionsByDay.rows, popularExs: popularExs.rows });
+    // Revenu par jour (basé sur subscriptions)
+    const revenueByDay = await db.query(
+      'SELECT DATE(start_date) as day, SUM(price) as total FROM subscriptions WHERE status = "active" GROUP BY day ORDER BY day DESC LIMIT 14'
+    );
+    
+    res.json({ 
+      sessionsByDay: sessionsByDay.rows, 
+      popularExs: popularExs.rows,
+      revenueByDay: revenueByDay.rows
+    });
   } catch (err) { res.status(500).json({ error: 'Erreur analytics.' }); }
+});
+
+// 📊 GLOBAL STATS : Résumé pour le dashboard
+router.get('/stats', auth, isAdmin, async (req, res) => {
+  try {
+    const usersCount = await db.query('SELECT COUNT(*) as count FROM users');
+    const premiumCount = await db.query('SELECT COUNT(*) as count FROM users WHERE is_premium = 1');
+    const totalRev = await db.query('SELECT SUM(price) as total FROM subscriptions WHERE status = "active"');
+    const sessionsToday = await db.query('SELECT COUNT(*) as count FROM sessions WHERE DATE(timestamp) = CURDATE()');
+
+    res.json({
+      totalUsers: usersCount.rows[0].count,
+      premiumUsers: premiumCount.rows[0].count,
+      totalRevenue: totalRev.rows[0].total || 0,
+      sessionsToday: sessionsToday.rows[0].count
+    });
+  } catch (err) { res.status(500).json({ error: 'Erreur stats.' }); }
+});
+
+// 🧾 TRANSACTIONS : Liste des derniers abonnements
+router.get('/transactions', auth, isAdmin, async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT s.*, u.email 
+      FROM subscriptions s 
+      JOIN users u ON s.user_id = u.id 
+      ORDER BY s.start_date DESC 
+      LIMIT 50
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Erreur transactions.' }); }
 });
 
 // 🛡️ SÉCURITÉ & AUDIT : Liste des logs
@@ -67,12 +107,28 @@ router.get('/routines', auth, isAdmin, async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Erreur CMS.' }); }
 });
 
+router.post('/routines', auth, isAdmin, async (req, res) => {
+  const { name, description, exs, dur, is_active } = req.body;
+  const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
+  try {
+    const result = await db.query(
+      'INSERT INTO global_routines (slug, name, description, exs, dur, is_active) VALUES (?, ?, ?, ?, ?, ?)',
+      [slug, name, description, JSON.stringify(exs), dur, is_active]
+    );
+    await logAction(req.user.id, 'CREATE_ROUTINE', result.insertId, { name });
+    res.status(201).json({ message: 'Routine créée.' });
+  } catch (err) { 
+    console.error(err);
+    res.status(500).json({ error: 'Erreur création routine.' }); 
+  }
+});
+
 router.put('/routines/:id', auth, isAdmin, async (req, res) => {
-  const { name, description, exs, dur } = req.body;
+  const { name, description, exs, dur, is_active } = req.body;
   try {
     await db.query(
-      'UPDATE global_routines SET name=?, description=?, exs=?, dur=? WHERE id=?',
-      [name, description, JSON.stringify(exs), dur, req.params.id]
+      'UPDATE global_routines SET name=?, description=?, exs=?, dur=?, is_active=? WHERE id=?',
+      [name, description, JSON.stringify(exs), dur, is_active, req.params.id]
     );
     await logAction(req.user.id, 'MODIFY_ROUTINE', req.params.id, { name });
     res.json({ message: 'Routine mise à jour.' });

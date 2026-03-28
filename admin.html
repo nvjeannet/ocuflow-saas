@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OcuFlow HQ — Master Admin Dashboard</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --admin-bg: #0f172a;
@@ -39,7 +40,9 @@
   <aside class="sidebar">
     <div class="logo" style="margin-bottom:40px;">Ocu<span>Flow</span> Admin<div class="logo-slogan">La Gymnastique Oculaire</div></div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" onclick="showTab('users')">👥 Utilisateurs</div>
+      <div class="nav-item active" onclick="showTab('home')">🏠 Vue d'ensemble</div>
+      <div class="nav-item" onclick="showTab('users')">👥 Utilisateurs</div>
+      <div class="nav-item" onclick="showTab('transactions')">🧾 Transactions</div>
       <div class="nav-item" onclick="showTab('partners')">🤝 Partenaires</div>
       <div class="nav-item" onclick="showTab('testimonials')">⭐ Avis Clients</div>
       <div class="nav-item" onclick="showTab('pricing')">💰 Tarifs & TVA</div>
@@ -52,7 +55,44 @@
   </aside>
 
   <main class="main-content">
-    <div id="tab-users" class="tab-content">
+    <!-- Tab: Home (Dashboard BI) -->
+    <div id="tab-home" class="tab-content">
+      <h1 style="margin-bottom:32px;">OcuFlow Business Intelligence</h1>
+      
+      <div class="stats-grid">
+        <div class="stat-box">
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Revenu Total</span>
+          <div class="stat-val" id="stat-total-revenue">--</div>
+        </div>
+        <div class="stat-box">
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Utilisateurs</span>
+          <div class="stat-val" id="stat-total-users">--</div>
+        </div>
+        <div class="stat-box">
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Abonnés Premium</span>
+          <div class="stat-val" id="stat-premium-users">--</div>
+        </div>
+        <div class="stat-box">
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Séances du jour</span>
+          <div class="stat-val" id="stat-sessions-today">--</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px;">
+        <div class="admin-card">
+          <h3 style="margin-bottom:20px;">Activité (14 derniers jours)</h3>
+          <canvas id="sessionsChart" height="150"></canvas>
+        </div>
+        <div class="admin-card">
+          <h3 style="margin-bottom:20px;">Exercices Populaires</h3>
+          <ul id="popular-exs-list" style="list-style:none; padding:0;">
+            <!-- JS -->
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-users" class="tab-content" style="display:none;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
         <h1>Gestion des Utilisateurs</h1>
         <div id="stats-users" style="color:var(--muted); font-size:0.9rem;"></div>
@@ -67,6 +107,26 @@
               <th>Pays</th>
               <th>Dernière séance</th>
               <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody><!-- JS --></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Transactions -->
+    <div id="tab-transactions" class="tab-content" style="display:none;">
+      <h1>Journal des Abonnements</h1>
+      <div class="admin-card">
+        <table id="table-transactions">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Utilisateur</th>
+              <th>Plan</th>
+              <th>Prix</th>
+              <th>Statut</th>
+              <th>Fin</th>
             </tr>
           </thead>
           <tbody><!-- JS --></tbody>
@@ -131,7 +191,63 @@
         </table>
       </div>
     </div>
+
+    <!-- Tab: CMS Routines -->
+    <div id="tab-routines" class="tab-content" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px;">
+        <h1>Gestion des Routines Globales</h1>
+        <button class="btn btn-primary" onclick="openRoutineModal()">+ Nouvelle Routine</button>
+      </div>
+      <div class="admin-card">
+        <table id="table-routines">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nom</th>
+              <th>Exercices</th>
+              <th>Durée (s)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody><!-- JS --></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab: Audit Logs -->
+    <div id="tab-logs" class="tab-content" style="display:none;">
+      <h1>Journal d'Audit Sécurisé</h1>
+      <div class="admin-card">
+        <table id="table-logs">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Admin</th>
+              <th>Action</th>
+              <th>Cible</th>
+              <th>Détails</th>
+            </tr>
+          </thead>
+          <tbody><!-- JS --></tbody>
+        </table>
+      </div>
+    </div>
   </main>
+
+  <!-- MODAL: Generic Editor -->
+  <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:var(--admin-sidebar); width:500px; padding:40px; border-radius:30px; border:1px solid var(--border); position:relative;">
+      <h2 id="modal-title" style="margin-bottom:24px;">Éditeur</h2>
+      <div id="modal-body" style="display:grid; gap:16px;">
+        <!-- Dynamic Form -->
+      </div>
+      <div style="margin-top:32px; display:flex; gap:12px;">
+        <button class="btn btn-primary" id="modal-save" style="flex:1;">Enregistrer</button>
+        <button class="btn btn-ghost" onclick="closeModal()" style="flex:1;">Annuler</button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/core.js"></script>
   <script>
@@ -149,7 +265,8 @@
     }
 
     async function loadData(tab) {
-      const res = await fetch(`${API_ADMIN}/${tab}`, {
+      const endpoint = (tab === 'home') ? 'stats' : tab;
+      const res = await fetch(`${API_ADMIN}/${endpoint}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if(res.status === 403) {
@@ -158,7 +275,60 @@
         return;
       }
       const data = await res.json();
-      renderTable(tab, data);
+      
+      if (tab === 'home') {
+        renderHome(data);
+        // Also load analytics for charts
+        const aRes = await fetch(`${API_ADMIN}/analytics`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const aData = await aRes.json();
+        renderCharts(aData);
+      } else {
+        renderTable(tab, data);
+      }
+    }
+
+    function renderHome(stats) {
+      document.getElementById('stat-total-revenue').textContent = stats.totalRevenue + " XAF";
+      document.getElementById('stat-total-users').textContent = stats.totalUsers;
+      document.getElementById('stat-premium-users').textContent = stats.premiumUsers;
+      document.getElementById('stat-sessions-today').textContent = stats.sessionsToday;
+    }
+
+    let sessionsChart = null;
+    function renderCharts(data) {
+      const ctx = document.getElementById('sessionsChart').getContext('2d');
+      if (sessionsChart) sessionsChart.destroy();
+      
+      const labels = data.sessionsByDay.map(d => new Date(d.day).toLocaleDateString()).reverse();
+      const values = data.sessionsByDay.map(d => d.count).reverse();
+
+      sessionsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Séances / Jour',
+            data: values,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } }
+        }
+      });
+
+      const list = document.getElementById('popular-exs-list');
+      list.innerHTML = data.popularExs.map(ex => `
+        <li style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="font-size:0.85rem;">Exercice #${ex.ex_id}</span>
+          <span class="status-pill status-approved">${ex.usage} séances</span>
+        </li>
+      `).join('');
     }
 
     function renderTable(tab, data) {
@@ -213,7 +383,109 @@
             <td><button class="btn btn-ghost" style="font-size:0.7rem;" onclick="modifyPrice(${p.id})">✏️</button></td>
           </tr>
         `).join('');
+      } else if (tab === 'transactions') {
+        tbody.innerHTML = data.map(t => `
+          <tr>
+            <td style="font-size:0.7rem;">${new Date(t.start_date).toLocaleDateString()}</td>
+            <td>${t.email}</td>
+            <td><span class="status-pill status-approved" style="text-transform:uppercase;">${t.plan_type}</span></td>
+            <td><b>${t.price} ${t.currency || 'XAF'}</b></td>
+            <td><span class="status-pill status-${t.status === 'active' ? 'approved' : 'pending'}">${t.status}</span></td>
+            <td>${new Date(t.end_date).toLocaleDateString()}</td>
+          </tr>
+        `).join('');
+      } else if (tab === 'routines') {
+        tbody.innerHTML = data.map(r => `
+          <tr>
+            <td>${r.id}</td>
+            <td><b>${r.name}</b></td>
+            <td style="font-size:0.7rem;">${r.exs}</td>
+            <td>${r.dur}s</td>
+            <td><span class="status-pill ${r.is_active ? 'status-approved' : 'status-pending'}">${r.is_active ? 'ACTIF' : 'INACTIF'}</span></td>
+            <td>
+              <button class="btn btn-ghost" style="font-size:0.75rem;" onclick="openRoutineModal(${r.id}, '${r.name}', '${r.description}', '${r.exs}', ${r.dur}, ${r.is_active})">✏️</button>
+            </td>
+          </tr>
+        `).join('');
+      } else if (tab === 'logs') {
+        tbody.innerHTML = data.map(l => `
+          <tr>
+            <td style="font-size:0.65rem;">${new Date(l.timestamp).toLocaleString()}</td>
+            <td>${l.admin_email}</td>
+            <td><code>${l.action}</code></td>
+            <td>ID #${l.target_id || '—'}</td>
+            <td style="font-size:0.7rem; color:var(--muted);">${l.details}</td>
+          </tr>
+        `).join('');
       }
+    }
+
+    // MODAL LOGIC
+    let currentEditId = null;
+
+    function openRoutineModal(id = null, name = '', desc = '', exs = '[]', dur = 300, active = 1) {
+      currentEditId = id;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = id ? "Modifier la Routine" : "Nouvelle Routine";
+      
+      const body = document.getElementById('modal-body');
+      body.innerHTML = `
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Nom de la routine</label>
+          <input type="text" id="m-name" value="${name}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Description</label>
+          <textarea id="m-desc" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:80px; resize:none;">${desc}</textarea>
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Exercices (IDs JSON, ex: [1,2,3])</label>
+          <input type="text" id="m-exs" value='${exs}' class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; font-family:monospace;">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div>
+            <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Durée (sec)</label>
+            <input type="number" id="m-dur" value="${dur}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          </div>
+          <div>
+            <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Statut</label>
+            <select id="m-active" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+              <option value="1" ${active ? 'selected' : ''}>Active</option>
+              <option value="0" ${!active ? 'selected' : ''}>Inactive</option>
+            </select>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('modal-save').onclick = saveRoutine;
+    }
+
+    async function saveRoutine() {
+      const data = {
+        name: document.getElementById('m-name').value,
+        description: document.getElementById('m-desc').value,
+        exs: JSON.parse(document.getElementById('m-exs').value || '[]'),
+        dur: parseInt(document.getElementById('m-dur').value),
+        is_active: parseInt(document.getElementById('m-active').value)
+      };
+
+      const method = currentEditId ? 'PUT' : 'POST';
+      const url = currentEditId ? `${API_ADMIN}/routines/${currentEditId}` : `${API_ADMIN}/routines`;
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) { closeModal(); loadData('routines'); }
+        else { alert("Erreur lors de l'enregistrement."); }
+      } catch (e) { console.error(e); }
+    }
+
+    function closeModal() {
+      document.getElementById('admin-modal').style.display = 'none';
+      currentEditId = null;
     }
 
     async function togglePremium(id, status) {
@@ -249,7 +521,7 @@
     }
 
     // Init load
-    loadData('users');
+    loadData('home');
   </script>
 </body>
 </html>
