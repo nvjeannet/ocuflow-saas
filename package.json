@@ -1,0 +1,8 @@
+{
+  "name": "ocuflow-saas",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "dev": "npm run dev --prefix backend"
+  }
+}
