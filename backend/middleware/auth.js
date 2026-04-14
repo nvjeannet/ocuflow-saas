@@ -15,6 +15,7 @@ module.exports = (req, res, next) => {
     req.user = verified;
     next();
   } catch (err) {
-    res.status(400).json({ error: 'Jeton invalide.' });
+    console.warn(`[Auth] Jeton invalide ou expiré: ${err.message}`);
+    res.status(401).json({ error: 'Jeton invalide ou expiré.' });
   }
 };

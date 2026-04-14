@@ -3,7 +3,10 @@ const crypto = require('crypto');
 const db = require('./db');
 const router = express.Router();
 
-const MONEROO_SECRET = process.env.MONEROO_SECRET || 'votre_secret_moneroo';
+const MONEROO_SECRET = process.env.MONEROO_SECRET;
+if (!MONEROO_SECRET) {
+  console.error('⚠️  MONEROO_SECRET manquant dans .env ! Les webhooks ne fonctionneront pas.');
+}
 
 // MIDDLEWARE POUR RÉCUPÉRER LE BODY BRUT (nécessaire pour la vérification HMAC)
 router.post('/moneroo', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -11,14 +14,12 @@ router.post('/moneroo', express.raw({ type: 'application/json' }), async (req, r
   const payload = req.body;
 
   // 1. Vérification de la signature HMAC
-  if (MONEROO_SECRET !== 'votre_secret_moneroo') {
-    const hmac = crypto.createHmac('sha256', MONEROO_SECRET);
-    const digest = hmac.update(payload).digest('hex');
-    
-    if (signature !== digest) {
-      console.error('Signature Moneroo invalide !');
-      return res.status(401).send('Invalid signature');
-    }
+  const hmac = crypto.createHmac('sha256', MONEROO_SECRET);
+  const digest = hmac.update(payload).digest('hex');
+  
+  if (signature !== digest) {
+    console.error("Signature Moneroo invalide ! Tentative d'intrusion.");
+    return res.status(401).send('Invalid signature');
   }
 
   const event = JSON.parse(payload.toString());

@@ -33,6 +33,14 @@
     .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 40px; }
     .stat-box { background: var(--admin-sidebar); padding: 24px; border-radius: 20px; border: 1px solid var(--border); }
     .stat-val { font-size: 1.8rem; font-weight: 800; font-family: 'Outfit'; margin-top: 8px; }
+
+    /* Modal / Form Fixes */
+    select option { background-color: #1e293b; color: #fff; }
+    input, select, textarea { 
+      background: rgba(255,255,255,0.05) !important; 
+      color: white !important; 
+      border: 1px solid var(--border) !important;
+    }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <div class="nav-item" onclick="showTab('movements')">🏋️ Exercices</div>
       <div class="nav-item" onclick="showTab('routines')">🌀 CMS Routines</div>
       <div class="nav-item" onclick="showTab('tips')">💡 Tips & Conseils</div>
+      <div class="nav-item" onclick="showTab('ai_config')">🧪 Config IA</div>
       <div class="nav-item" onclick="showTab('logs')">📜 Audit Logs</div>
     </nav>
     <div style="margin-top:auto; padding-top:40px; border-top:1px solid var(--border);">
@@ -61,7 +70,7 @@
     <div id="tab-home" class="tab-content">
       <h1 style="margin-bottom:32px;">OcuFlow Business Intelligence</h1>
       
-      <div class="stats-grid">
+      <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
         <div class="stat-box">
           <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">CA Total</span>
           <div class="stat-val" id="stat-total-revenue">--</div>
@@ -75,6 +84,14 @@
           <div class="stat-val"><span id="stat-premium-users">--</span> / <span id="stat-pro-users" style="color:var(--accent);">--</span></div>
         </div>
         <div class="stat-box">
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Rétention (DAU)</span>
+          <div class="stat-val" id="stat-dau" style="color:#22c55e;">--</div>
+        </div>
+        <div class="stat-box">
+          <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Santé Oculaire (Moy.)</span>
+          <div class="stat-val" id="stat-health">--</div>
+        </div>
+        <div class="stat-box">
           <span style="color:var(--muted);font-size:0.75rem;text-transform:uppercase;">Séances du jour</span>
           <div class="stat-val" id="stat-sessions-today">--</div>
         </div>
@@ -86,10 +103,10 @@
           <canvas id="sessionsChart" height="150"></canvas>
         </div>
         <div class="admin-card">
-          <h3 style="margin-bottom:20px;">Exercices Populaires</h3>
-          <ul id="popular-exs-list" style="list-style:none; padding:0;">
-            <!-- JS -->
-          </ul>
+          <h3 style="margin-bottom:20px;">Top Exercices</h3>
+          <ul id="popular-exs-list" style="list-style:none; padding:0;"></ul>
+          <h3 style="margin-top:40px; margin-bottom:20px;">Top Routines</h3>
+          <ul id="popular-routines-list" style="list-style:none; padding:0;"></ul>
         </div>
       </div>
     </div>
@@ -99,6 +116,29 @@
         <h1>Gestion des Utilisateurs</h1>
         <div id="stats-users" style="color:var(--muted); font-size:0.9rem;"></div>
       </div>
+      
+      <!-- User Filters -->
+      <div class="admin-card" style="padding:20px; display:flex; gap:16px; align-items:flex-end;">
+        <div style="flex:1;">
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Recherche (Email)</label>
+          <input type="text" id="user-filter-search" placeholder="ex: jean@..." class="btn btn-ghost" style="width:100%; text-align:left; padding:10px;" oninput="loadData('users')">
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Plan</label>
+          <select id="user-filter-plan" class="btn btn-ghost" style="padding:10px;" onchange="loadData('users')">
+            <option value="">Tous les plans</option>
+            <option value="free">Gratuit</option>
+            <option value="premium">Premium</option>
+            <option value="pro">Professionnel</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Pays</label>
+          <select id="user-filter-country" class="btn btn-ghost" style="padding:10px;" onchange="loadData('users')">
+            <option value="">Tous les pays</option>
+          </select>
+        </div>
+      </div>
       <div class="admin-card">
         <table id="table-users">
           <thead>
@@ -107,7 +147,7 @@
               <th>Email</th>
               <th>Plan</th>
               <th>Pays</th>
-              <th>Dernière séance</th>
+              <th>Dernier Login</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -252,11 +292,40 @@
             <tr>
               <th>Contenu</th>
               <th>Catégorie</th>
+              <th>Statut</th>
+              <th>Mis à jour</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody><!-- JS --></tbody>
         </table>
+      </div>
+    </div>
+
+      </div>
+    </div>
+
+    <!-- Tab: Config IA -->
+    <div id="tab-ai_config" class="tab-content" style="display:none;">
+      <h1>Configuration de l'IA Oculaire</h1>
+      <p style="color:var(--muted); margin-bottom:32px;">Ajustez les seuils de score et les recommandations générées par l'algorithme.</p>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+        <div class="admin-card">
+          <h3 style="margin-bottom:20px;">Seuils de Score</h3>
+          <div id="ai-thresholds-form" style="display:grid; gap:16px;">
+            <!-- JS -->
+          </div>
+          <button class="btn btn-primary" style="margin-top:24px; width:100%;" onclick="saveAIConfig('thresholds')">Enregistrer les seuils</button>
+        </div>
+        
+        <div class="admin-card">
+          <h3 style="margin-bottom:20px;">Templates de Conseils</h3>
+          <div id="ai-recs-form" style="display:grid; gap:16px;">
+            <!-- JS -->
+          </div>
+          <button class="btn btn-primary" style="margin-top:24px; width:100%;" onclick="saveAIConfig('recommendations')">Enregistrer les conseils</button>
+        </div>
       </div>
     </div>
 
@@ -296,41 +365,112 @@
 
   <script src="js/core.js"></script>
   <script>
-    const API_ADMIN = '/api/admin';
+    const API_ADMIN = `${API_BASE}/admin`;
     const token = localStorage.getItem('ocuflow_token');
+    let lastData = {}; // Global store
+    let movementsData = []; // Store exercises for pickers
+    let countriesData = []; // Store pricing countries
 
     if(!token) window.location.href = 'auth.html';
+
+    // Init: Load global data
+    window.onload = async () => {
+      await loadGlobalInfo();
+      showTab('home');
+    };
+
+    async function loadGlobalInfo() {
+      try {
+        const [mRes, cRes] = await Promise.all([
+          fetch(`${API_ADMIN}/movements`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_ADMIN}/countries`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        movementsData = await mRes.json();
+        countriesData = await cRes.json();
+        
+        // Populate filters
+        const countryFilter = document.getElementById('user-filter-country');
+        if(countryFilter) {
+          countriesData.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            countryFilter.appendChild(opt);
+          });
+        }
+      } catch (e) { console.error("Global Info Error:", e); }
+    }
 
     function showTab(tab) {
       document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
       document.querySelectorAll('.nav-item').forEach(i => {
         i.classList.remove('active');
-        if(i.getAttribute('onclick').includes(`'${tab}'`)) i.classList.add('active');
+        const attr = i.getAttribute('onclick');
+        if(attr && attr.includes(`'${tab}'`)) i.classList.add('active');
       });
-      document.getElementById('tab-' + tab).style.display = 'block';
+      const target = document.getElementById('tab-' + tab);
+      if(target) target.style.display = 'block';
       loadData(tab);
     }
 
     async function loadData(tab) {
-      const endpoint = (tab === 'home') ? 'stats' : tab;
-      const res = await fetch(`${API_ADMIN}/${endpoint}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if(res.status === 403) {
-        alert("Accès refusé. Vous devez être administrateur.");
-        window.location.href = 'dashboard.html';
-        return;
-      }
-      const data = await res.json();
-      
-      if (tab === 'home') {
-        renderHome(data);
-        // Also load analytics for charts
-        const aRes = await fetch(`${API_ADMIN}/analytics`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const aData = await aRes.json();
-        renderCharts(aData);
-      } else {
-        renderTable(tab, data);
+      try {
+        let endpoint = (tab === 'home') ? 'stats' : (tab === 'ai_config' ? 'ai-config' : tab);
+        let queryParams = "";
+        if (tab === 'users') {
+          const search = document.getElementById('user-filter-search').value;
+          const plan = document.getElementById('user-filter-plan').value;
+          const country = document.getElementById('user-filter-country').value;
+          queryParams = `?search=${encodeURIComponent(search)}&plan=${plan}&country=${country}`;
+        }
+
+        const res = await fetch(`${API_ADMIN}/${endpoint}${queryParams}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+          console.warn("Session expirée (401). Redirection vers login...");
+          localStorage.removeItem('ocuflow_token');
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        if(!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        const data = await res.json();
+        lastData[tab] = data;
+        
+        if (tab === 'home') {
+          renderHome(data);
+          const aRes = await fetch(`${API_ADMIN}/analytics`, { headers: { 'Authorization': `Bearer ${token}` } });
+          if (aRes.status === 401) window.location.href = 'auth.html';
+          
+          const aData = await aRes.json();
+          if (aData.error) {
+            const err = new Error(aData.error);
+            err.details = aData.details;
+            throw err;
+          }
+          renderCharts(aData);
+        } else if (tab === 'ai_config') {
+          renderAIConfig(data);
+        } else {
+          renderTable(tab, data);
+        }
+      } catch (e) {
+        console.error("LoadData Error:", e);
+        const tbody = document.querySelector(`#table-${tab} tbody`);
+        if(tbody) {
+          tbody.innerHTML = `<tr><td colspan="10" style="color:red; text-align:center;">Erreur de chargement: ${e.message}</td></tr>`;
+        } else {
+          // Fallback for non-table tabs (like AI Config)
+          const target = document.getElementById(`tab-${tab}`);
+          if(target) {
+            const errDiv = document.createElement('div');
+            errDiv.style.cssText = "color:red; padding:20px; text-align:center; background:rgba(255,0,0,0.1); border-radius:15px; margin-bottom:20px;";
+            errDiv.innerHTML = `⚠️ Erreur de chargement (${tab}): ${e.message}${e.details ? '<br><small>' + e.details + '</small>' : ''}`;
+            target.prepend(errDiv);
+          }
+        }
       }
     }
 
@@ -340,15 +480,20 @@
       document.getElementById('stat-premium-users').textContent = stats.premiumUsers;
       document.getElementById('stat-pro-users').textContent = stats.proUsers;
       document.getElementById('stat-sessions-today').textContent = stats.sessionsToday;
+      document.getElementById('stat-dau').textContent = stats.dau || 0;
+      document.getElementById('stat-health').textContent = (stats.avgHealth || 0) + "%";
     }
 
     let sessionsChart = null;
     function renderCharts(data) {
+      if (!data || data.error) return;
+
       const ctx = document.getElementById('sessionsChart').getContext('2d');
       if (sessionsChart) sessionsChart.destroy();
       
-      const labels = data.sessionsByDay.map(d => new Date(d.day).toLocaleDateString()).reverse();
-      const values = data.sessionsByDay.map(d => d.count).reverse();
+      const sessionsByDay = data.sessionsByDay || [];
+      const labels = sessionsByDay.map(d => new Date(d.day).toLocaleDateString()).reverse();
+      const values = sessionsByDay.map(d => d.count).reverse();
 
       sessionsChart = new Chart(ctx, {
         type: 'line',
@@ -371,23 +516,38 @@
       });
 
       const list = document.getElementById('popular-exs-list');
-      list.innerHTML = data.popularExs.map(ex => `
+      const popularExs = data.popularExs || [];
+      list.innerHTML = popularExs.length ? popularExs.map(ex => `
         <li style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
           <span style="font-size:0.85rem;">Exercice #${ex.ex_id}</span>
           <span class="status-pill status-approved">${ex.usage} séances</span>
         </li>
-      `).join('');
+      `).join('') : '<li style="color:var(--muted); text-align:center;">Aucun exercice noté</li>';
+
+      const rlist = document.getElementById('popular-routines-list');
+      const popularRoutines = data.popularRoutines || [];
+      rlist.innerHTML = popularRoutines.length ? popularRoutines.map(r => `
+        <li style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+          <span style="font-size:0.85rem;">${r.name}</span>
+          <span class="status-pill status-approved">${r.usage} utilisations</span>
+        </li>
+      `).join('') : '<li style="color:var(--muted); text-align:center;">Aucune routine utilisée</li>';
     }
 
     function renderTable(tab, data) {
       const tbody = document.querySelector(`#table-${tab} tbody`);
       if(!tbody) return;
+      if(!Array.isArray(data)) {
+        console.error("Data is not an array for tab:", tab, data);
+        tbody.innerHTML = `<tr><td colspan="10" style="color:orange; text-align:center;">Aucune donnée ou erreur format.</td></tr>`;
+        return;
+      }
       
       if(tab === 'users') {
         tbody.innerHTML = data.map(u => `
           <tr>
             <td>${u.id}</td>
-            <td>${u.email}</td>
+            <td title="Parent ID: ${u.parent_id || 'Aucun'}">${u.email}</td>
             <td>
               <select class="btn btn-ghost" style="font-size:0.7rem; padding:4px 8px;" onchange="updateUserPlan(${u.id}, this.value)">
                 <option value="free" ${!u.is_premium ? 'selected' : ''}>Gratuit</option>
@@ -397,7 +557,9 @@
             </td>
             <td>${u.country_code || '??'}</td>
             <td>${u.last_login ? new Date(u.last_login).toLocaleDateString() : '—'}</td>
-            <td>-</td>
+            <td>
+               <button class="btn btn-ghost" style="font-size:0.7rem;" onclick="openEmailModal(${u.id}, '${u.email}')">✉️</button>
+            </td>
           </tr>
         `).join('');
       } else if(tab === 'testimonials') {
@@ -421,29 +583,32 @@
           </tr>
         `).join('');
       } else if(tab === 'movements') {
-        tbody.innerHTML = data.map(m => `
+        tbody.innerHTML = data.map((m, index) => `
           <tr>
             <td style="font-size:1.2rem;">${m.icon}</td>
             <td><b>${m.name}</b></td>
             <td><code>${m.slug}</code></td>
             <td><span class="status-pill status-approved">${m.category}</span></td>
             <td>
-              <button class="btn btn-ghost" style="font-size:0.75rem;" onclick='openMovementModal(${JSON.stringify(m)})'>✏️</button>
+              <button class="btn btn-ghost" style="font-size:0.75rem;" onclick='openMovementModal(${index})'>✏️</button>
             </td>
           </tr>
         `).join('');
       } else if(tab === 'tips') {
-        tbody.innerHTML = data.map(t => `
+        tbody.innerHTML = data.map((t, index) => `
           <tr>
-            <td>${t.content}</td>
-            <td>${t.category}</td>
-            <td>
-              <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deleteTip(${t.id})">🗑️</button>
+            <td style="max-width:400px;">${t.content}</td>
+            <td><span class="status-pill status-approved">${t.category}</span></td>
+            <td><span class="status-pill ${t.is_active ? 'status-approved' : 'status-pending'}">${t.is_active ? 'Actif' : 'Inactif'}</span></td>
+            <td style="font-size:0.7rem; color:var(--muted);">${t.updated_at ? new Date(t.updated_at).toLocaleDateString() : '—'}</td>
+            <td style="display:flex; gap:8px;">
+               <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openTipModal(${index})'>✏️</button>
+               <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deleteTip(${t.id})">🗑️</button>
             </td>
           </tr>
         `).join('');
       } else if(tab === 'partners') {
-        tbody.innerHTML = data.map(p => `
+        tbody.innerHTML = data.map((p, index) => `
           <tr>
             <td><div style="width:30px;height:30px;background:#333;border-radius:50%; background-image:url('${p.logo_url}'); background-size:cover;"></div></td>
             <td><b>${p.name}</b></td>
@@ -451,13 +616,13 @@
             <td>${p.city}</td>
             <td>${p.country_code}</td>
             <td style="display:flex; gap:8px;">
-               <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openPartnerModal(${JSON.stringify(p)})'>✏️</button>
+               <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openPartnerModal(${index})'>✏️</button>
                <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deletePartner(${p.id})">🗑️</button>
             </td>
           </tr>
         `).join('');
       } else if(tab === 'pricing') {
-         tbody.innerHTML = data.map(p => `
+         tbody.innerHTML = data.map((p, index) => `
           <tr>
             <td><b>${p.country_code}</b></td>
             <td>${p.plan_type}</td>
@@ -465,7 +630,7 @@
             <td>${p.currency}</td>
             <td>${p.vat_rate}%</td>
             <td style="display:flex; gap:8px;">
-              <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openPricingModal(${JSON.stringify(p)})'>✏️</button>
+              <button class="btn btn-ghost" style="font-size:0.7rem;" onclick='openPricingModal(${index})'>✏️</button>
               <button class="btn btn-ghost" style="font-size:0.7rem;color:red;" onclick="deletePricing(${p.id})">🗑️</button>
             </td>
           </tr>
@@ -476,13 +641,23 @@
             <td style="font-size:0.7rem;">${new Date(t.start_date).toLocaleDateString()}</td>
             <td>${t.email}</td>
             <td><span class="status-pill status-approved" style="text-transform:uppercase;">${t.plan_type}</span></td>
-            <td><b>${t.price} ${t.currency || 'XAF'}</b></td>
+            <td><b>${t.amount} ${t.currency || 'XAF'}</b></td>
             <td><span class="status-pill status-${t.status === 'active' ? 'approved' : 'pending'}">${t.status}</span></td>
             <td>${t.txn_id ? `<a href="https://moneroo.com/t/${t.txn_id}" target="_blank" style="color:var(--accent); font-size:0.7rem;">Voir Reçu ↗</a>` : new Date(t.end_date).toLocaleDateString()}</td>
           </tr>
         `).join('');
+      } else if (tab === 'logs') {
+        tbody.innerHTML = data.map(l => `
+          <tr>
+            <td style="font-size:0.7rem;">${new Date(l.timestamp).toLocaleString()}</td>
+            <td><b>${l.admin_email || 'Système'}</b></td>
+            <td><span class="status-pill status-pending">${l.action}</span></td>
+            <td>${l.target_id || '-'}</td>
+            <td style="font-size:0.7rem; max-width:300px; word-break:break-all;">${l.details ? JSON.stringify(l.details) : ''}</td>
+          </tr>
+        `).join('');
       } else if (tab === 'routines') {
-        tbody.innerHTML = data.map(r => `
+        tbody.innerHTML = data.map((r, index) => `
           <tr>
             <td>${r.id}</td>
             <td><b>${r.name}</b></td>
@@ -490,55 +665,150 @@
             <td>${r.dur}s</td>
             <td><span class="status-pill ${r.is_active ? 'status-approved' : 'status-pending'}">${r.is_active ? 'ACTIF' : 'INACTIF'}</span></td>
             <td>
-              <button class="btn btn-ghost" style="font-size:0.75rem;" onclick="openRoutineModal(${r.id}, '${r.name}', '${r.description}', '${r.exs}', ${r.dur}, ${r.is_active})">✏️</button>
+              <button class="btn btn-ghost" style="font-size:0.75rem;" onclick="openRoutineModal(${index})">✏️</button>
             </td>
-          </tr>
-        `).join('');
-      } else if (tab === 'logs') {
-        tbody.innerHTML = data.map(l => `
-          <tr>
-            <td style="font-size:0.65rem;">${new Date(l.timestamp).toLocaleString()}</td>
-            <td>${l.admin_email}</td>
-            <td><code>${l.action}</code></td>
-            <td>ID #${l.target_id || '—'}</td>
-            <td style="font-size:0.7rem; color:var(--muted);">${l.details}</td>
           </tr>
         `).join('');
       }
     }
 
-    // MODAL LOGIC
-    let currentEditId = null;
+    // AI CONFIG RENDERING
+    function renderAIConfig(data) {
+      const thresholds = data.thresholds || { excellent: 80, fatigue: 50 };
+      const recs = data.recommendations || { excellent: [], fatigue: [], alert: [] };
 
-    function openRoutineModal(id = null, name = '', desc = '', exs = '[]', dur = 300, active = 1) {
-      currentEditId = id;
-      document.getElementById('admin-modal').style.display = 'flex';
-      document.getElementById('modal-title').textContent = id ? "Modifier la Routine" : "Nouvelle Routine";
+      document.getElementById('ai-thresholds-form').innerHTML = `
+        <div>
+          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:8px;">Seuil Excellent (Min Score : ${thresholds.excellent})</label>
+          <input type="range" id="ai-thr-excellent" min="0" max="100" value="${thresholds.excellent}" style="width:100%;" oninput="this.previousElementSibling.textContent='Seuil Excellent (Min Score : '+this.value+')'">
+        </div>
+        <div>
+          <label style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:8px;">Seuil Fatigue (Min Score : ${thresholds.fatigue})</label>
+          <input type="range" id="ai-thr-fatigue" min="0" max="100" value="${thresholds.fatigue}" style="width:100%;" oninput="this.previousElementSibling.textContent='Seuil Fatigue (Min Score : '+this.value+')'">
+        </div>
+      `;
       
+      document.getElementById('ai-recs-form').innerHTML = `
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted);">Conseils "Excellent" (un par ligne)</label>
+          <textarea id="ai-rec-excellent" class="btn btn-ghost" style="width:100%; height:80px; text-align:left; margin-top:8px;">${(recs.excellent || []).join('\n')}</textarea>
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted);">Conseils "Fatigue" (un par ligne)</label>
+          <textarea id="ai-rec-fatigue" class="btn btn-ghost" style="width:100%; height:80px; text-align:left; margin-top:8px;">${(recs.fatigue || []).join('\n')}</textarea>
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted);">Conseils "Alerte" (un par ligne)</label>
+          <textarea id="ai-rec-alert" class="btn btn-ghost" style="width:100%; height:80px; text-align:left; margin-top:8px;">${(recs.alert || []).join('\n')}</textarea>
+        </div>
+      `;
+    }
+
+    async function saveAIConfig(key) {
+      const isThr = (key === 'thresholds');
+      const elEx = document.getElementById(isThr ? 'ai-thr-excellent' : 'ai-rec-excellent');
+      if(!elEx) return alert("Erreur: Les champs ne sont pas chargés. Rechargez la page.");
+
+      let value = {};
+      if(isThr) {
+        value = {
+          excellent: parseInt(document.getElementById('ai-thr-excellent').value),
+          fatigue: parseInt(document.getElementById('ai-thr-fatigue').value)
+        };
+      } else {
+        value = {
+          excellent: document.getElementById('ai-rec-excellent').value.split('\n').filter(s => s.trim()),
+          fatigue: document.getElementById('ai-rec-fatigue').value.split('\n').filter(s => s.trim()),
+          alert: document.getElementById('ai-rec-alert').value.split('\n').filter(s => s.trim())
+        };
+      }
+
+      try {
+        const res = await fetch(`${API_ADMIN}/ai-config/${key}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value })
+        });
+        if(res.ok) alert("Configuration " + key + " mise à jour !");
+        else throw new Error("Erreur serveur lors de la sauvegarde.");
+      } catch (e) { alert("Erreur: " + e.message); }
+    }
+
+    // EMAIL MODAL
+    function openEmailModal(userId, email) {
+      currentEditId = userId;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = `Contacter ${email}`;
       const body = document.getElementById('modal-body');
       body.innerHTML = `
         <div>
+          <label style="font-size:0.7rem; color:var(--muted);">Objet</label>
+          <input type="text" id="mail-subject" value="Information OcuFlow" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; margin-top:8px;">
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--muted);">Message</label>
+          <textarea id="mail-body" class="btn btn-ghost" style="width:100%; height:120px; text-align:left; padding:12px; margin-top:8px; resize:none;" placeholder="Votre message ici..."></textarea>
+        </div>
+      `;
+      document.getElementById('modal-save').onclick = sendUserEmail;
+    }
+
+    async function sendUserEmail() {
+      const subject = document.getElementById('mail-subject').value;
+      const message = document.getElementById('mail-body').value;
+      if(!message) return alert("Le message est vide.");
+      try {
+        const res = await fetch(`${API_ADMIN}/users/${currentEditId}/email`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject, message })
+        });
+        if(res.ok) { alert("Email envoyé !"); closeModal(); }
+      } catch (e) { alert(e.message); }
+    }
+
+    // MODAL LOGIC
+    let currentEditId = null;
+
+    function openRoutineModal(index = null) {
+      const r = (index !== null) ? lastData['routines'][index] : null;
+      currentEditId = r ? r.id : null;
+      document.getElementById('admin-modal').style.display = 'flex';
+      document.getElementById('modal-title').textContent = r ? "Modifier la Routine" : "Nouvelle Routine";
+      
+      const body = document.getElementById('modal-body');
+      const selectedExs = r ? (typeof r.exs === 'string' ? JSON.parse(r.exs) : r.exs) : [];
+
+      body.innerHTML = `
+        <div>
           <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Nom de la routine</label>
-          <input type="text" id="m-name" value="${name}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          <input type="text" id="r-name" value="${r ? r.name : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
         </div>
         <div>
           <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Description</label>
-          <textarea id="m-desc" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:80px; resize:none;">${desc}</textarea>
+          <textarea id="r-desc" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:60px; resize:none;">${r ? r.description : ''}</textarea>
         </div>
         <div>
-          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Exercices (IDs JSON, ex: [1,2,3])</label>
-          <input type="text" id="m-exs" value='${exs}' class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; font-family:monospace;">
+          <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Sélectionner les exercices</label>
+          <div style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:10px; padding:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            ${movementsData.map(m => `
+              <label style="display:flex; align-items:center; gap:8px; font-size:0.75rem; cursor:pointer; color:var(--muted);">
+                <input type="checkbox" name="r-ex-check" value="${m.id}" ${selectedExs.includes(m.id) ? 'checked' : ''}>
+                ${m.icon} ${m.name}
+              </label>
+            `).join('')}
+          </div>
         </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
           <div>
             <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Durée (sec)</label>
-            <input type="number" id="m-dur" value="${dur}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+            <input type="number" id="r-dur" value="${r ? r.dur : 120}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
           </div>
           <div>
             <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Statut</label>
-            <select id="m-active" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
-              <option value="1" ${active ? 'selected' : ''}>Active</option>
-              <option value="0" ${!active ? 'selected' : ''}>Inactive</option>
+            <select id="r-active" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+              <option value="1" ${r && r.is_active ? 'selected' : ''}>Active</option>
+              <option value="0" ${r && !r.is_active ? 'selected' : ''}>Inactive</option>
             </select>
           </div>
         </div>
@@ -548,12 +818,14 @@
     }
 
     async function saveRoutine() {
+      const checkedExs = Array.from(document.querySelectorAll('input[name="r-ex-check"]:checked')).map(cb => parseInt(cb.value));
+      
       const data = {
-        name: document.getElementById('m-name').value,
-        description: document.getElementById('m-desc').value,
-        exs: JSON.parse(document.getElementById('m-exs').value || '[]'),
-        dur: parseInt(document.getElementById('m-dur').value),
-        is_active: parseInt(document.getElementById('m-active').value)
+        name: document.getElementById('r-name').value,
+        description: document.getElementById('r-desc').value,
+        exs: JSON.stringify(checkedExs),
+        dur: parseInt(document.getElementById('r-dur').value),
+        is_active: parseInt(document.getElementById('r-active').value)
       };
 
       const method = currentEditId ? 'PUT' : 'POST';
@@ -595,42 +867,81 @@
     }
 
     // PARTNER MODAL
-    function openPartnerModal(p = null) {
+    function openPartnerModal(index = null) {
+      const p = (index !== null) ? lastData['partners'][index] : null;
       currentEditId = p ? p.id : null;
       document.getElementById('admin-modal').style.display = 'flex';
       document.getElementById('modal-title').textContent = p ? "Modifier Partenaire" : "Nouveau Partenaire";
       
       const body = document.getElementById('modal-body');
       body.innerHTML = `
+        <div style="display:flex; gap:20px; align-items:center; margin-bottom:10px;">
+          <div id="logo-preview-container" style="width:80px; height:80px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:15px; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+            ${p && p.logo_url ? `<img src="${p.logo_url}" style="width:100%; height:100%; object-fit:cover;">` : '<span style="font-size:1.5rem;">🏢</span>'}
+          </div>
+          <div style="flex:1;">
+             <label style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Logo (Disque local)</label>
+             <input type="file" id="p-logo-file" accept="image/*" class="btn btn-ghost" style="width:100%; padding:8px;" onchange="previewLogo(this)">
+             <input type="hidden" id="p-logo-url" value="${p ? p.logo_url || '' : ''}">
+          </div>
+        </div>
         <input type="text" id="p-name" placeholder="Nom du partenaire" value="${p ? p.name : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
         <input type="text" id="p-manager" placeholder="Manager" value="${p ? p.manager || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-          <input type="text" id="p-city" placeholder="Ville" value="${p ? p.city : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
-          <input type="text" id="p-country" placeholder="Pays (ex: GA)" value="${p ? p.country_code : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          <input type="text" id="p-phone" placeholder="Téléphone" value="${p ? p.phone || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          <input type="text" id="p-website" placeholder="Site web" value="${p ? p.website || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <input type="text" id="p-city" placeholder="Ville" value="${p ? p.city || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+          <select id="p-country" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+            <option value="">-- Pays --</option>
+            ${countriesData.map(c => `
+              <option value="${c}" ${p && p.country_code === c ? 'selected' : ''}>${c}</option>
+            `).join('')}
+          </select>
         </div>
         <input type="email" id="p-email" placeholder="Email" value="${p ? p.email || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
-        <input type="text" id="p-logo" placeholder="URL Logo" value="${p ? p.logo_url || '' : ''}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
       `;
       document.getElementById('modal-save').onclick = savePartner;
     }
 
+    function previewLogo(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById('logo-preview-container').innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
     async function savePartner() {
-      const data = {
-        name: document.getElementById('p-name').value,
-        manager: document.getElementById('p-manager').value,
-        city: document.getElementById('p-city').value,
-        country_code: document.getElementById('p-country').value,
-        email: document.getElementById('p-email').value,
-        logo_url: document.getElementById('p-logo').value
-      };
+      const formData = new FormData();
+      formData.append('name', document.getElementById('p-name').value);
+      formData.append('manager', document.getElementById('p-manager').value);
+      formData.append('city', document.getElementById('p-city').value);
+      formData.append('country_code', document.getElementById('p-country').value);
+      formData.append('email', document.getElementById('p-email').value);
+      formData.append('phone', document.getElementById('p-phone').value);
+      formData.append('website', document.getElementById('p-website').value);
+      formData.append('logo_url', document.getElementById('p-logo-url').value);
+
+      const fileInput = document.getElementById('p-logo-file');
+      if (fileInput.files && fileInput.files[0]) {
+        formData.append('logo', fileInput.files[0]);
+      }
+
       const method = currentEditId ? 'PUT' : 'POST';
       const url = currentEditId ? `${API_ADMIN}/partners/${currentEditId}` : `${API_ADMIN}/partners`;
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(data)
-      });
-      if(res.ok) { closeModal(); loadData('partners'); }
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        if(res.ok) { closeModal(); loadData('partners'); }
+      } catch (e) { alert(e.message); }
     }
 
     async function deleteMovement(id) {
@@ -652,7 +963,8 @@
     }
 
     // MOVEMENT MODAL
-    function openMovementModal(m = null) {
+    function openMovementModal(index = null) {
+      const m = (index !== null) ? lastData['movements'][index] : null;
       currentEditId = m ? m.id : null;
       document.getElementById('admin-modal').style.display = 'flex';
       document.getElementById('modal-title').textContent = m ? "Modifier Exercice" : "Nouvel Exercice";
@@ -694,13 +1006,18 @@
     }
 
     // TIPS MODAL
-    function openTipModal() {
+    function openTipModal(index = null) {
+      const t = (index !== null) ? lastData['tips'][index] : null;
+      currentEditId = t ? t.id : null;
       document.getElementById('admin-modal').style.display = 'flex';
-      document.getElementById('modal-title').textContent = "Nouveau Conseil";
+      document.getElementById('modal-title').textContent = t ? "Modifier Conseil" : "Nouveau Conseil";
       const body = document.getElementById('modal-body');
       body.innerHTML = `
-        <textarea id="tip-content" placeholder="Contenu du conseil" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:100px;"></textarea>
-        <input type="text" id="tip-cat" placeholder="Catégorie" value="general" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        <textarea id="tip-content" placeholder="Contenu du conseil" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px; height:100px;">${t ? t.content : ''}</textarea>
+        <div style="margin-top:12px;">
+          <label style="font-size:0.8rem; color:var(--muted);">Catégorie</label>
+          <input type="text" id="tip-cat" placeholder="Catégorie" value="${t ? t.category : 'general'}" class="btn btn-ghost" style="width:100%; text-align:left; padding:12px;">
+        </div>
       `;
       document.getElementById('modal-save').onclick = saveTip;
     }
@@ -710,8 +1027,10 @@
         content: document.getElementById('tip-content').value,
         category: document.getElementById('tip-cat').value
       };
-      const res = await fetch(`${API_ADMIN}/tips`, {
-        method: 'POST',
+      const method = currentEditId ? 'PUT' : 'POST';
+      const url = currentEditId ? `${API_ADMIN}/tips/${currentEditId}` : `${API_ADMIN}/tips`;
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(data)
       });
@@ -741,7 +1060,8 @@
     }
 
     // PRICING MODAL
-    function openPricingModal(p = null) {
+    function openPricingModal(index = null) {
+      const p = (index !== null) ? lastData['pricing'][index] : null;
       currentEditId = p ? p.id : null;
       document.getElementById('admin-modal').style.display = 'flex';
       document.getElementById('modal-title').textContent = p ? "Modifier Tarif" : "Nouveau Tarif";
@@ -828,8 +1148,7 @@
       window.location.href = 'index.html';
     }
 
-    // Init load
-    loadData('home');
+    // Global Info is loaded in window.onload defined above
   </script>
 </body>
 </html>

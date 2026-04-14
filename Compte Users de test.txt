@@ -1,5 +1,18 @@
-Compte Gestionnaire (PRO) :
+Lancer le serveur:
+# Depuis la racine du projet :
+   npm run dev
+# Ou depuis le dossier backend :
+   node index.js
 
+Ouvrez votre navigateur sur http://localhost:3000
+
+Accueil=	http://localhost:3000/
+Authentification=	http://localhost:3000/auth.html
+Dashboard=	http://localhost:3000/dashboard.html
+Admin=	http://localhost:3000/admin.html
+Entraînement=	http://localhost:3000/training.html
+
+Compte Gestionnaire (PRO) :
 Email : gestion@ocuflow.com
 Mot de passe : OcuFlow2026!
 Cet utilisateur a accès à la gestion d'équipe et au suivi de progression.
@@ -8,3 +21,9 @@ Compte Admin Plateforme :
 Email : admin@ocuflow.com
 Mot de passe : AdminFlow2026#
 Cet utilisateur a le rôle 'admin' pour la gestion globale.
+
+Pour le déploiement, il vous reste à :
+1-Mettre les vrais secrets dans .env de production (openssl rand -hex 32)
+2-Configurer Nginx + SSL (Let's Encrypt)
+3-Installer PM2 : npm install pm2 -g && pm2 start index.js --name ocuflow
+4-Exécuter npm run migrate sur le serveur

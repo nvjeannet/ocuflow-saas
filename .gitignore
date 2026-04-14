@@ -5,3 +5,19 @@ node_modules/
 dist/
 tmp/
 .gemini/
+uploads/
+
+# Documents & fichiers bureautiques
+*.docx
+*.pdf
+~$*
+*.txt
+!.gitignore
+
+# Fichiers de debug/test locaux
+debug_*.log
+server_*.log
+backend/server.log
+backend/server_bg.log
+backend/server_err.log
+backend/debug_auth.log

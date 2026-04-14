@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OcuFlow — Exercices Spéciaux</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#080c10;--surface:#0f1419;--panel:#141b23;--border:#1e2832;
+      --accent:#00e5ff;--text:#e8edf2;--muted:#5a6a7a;
+      --danger:#ff4d6d;--success:#00e5a0;--warn:#facc15;
+      --trans:.28s cubic-bezier(.4,0,.2,1);
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;overflow:hidden;}
+    body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+    /* ── HEADER ── */
+    .sp-header{display:flex;align-items:center;justify-content:space-between;
+      padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100;}
+    .sp-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;}
+    .sp-logo span{color:var(--accent);}
+    .sp-badge{font-size:.55rem;background:var(--accent);color:#000;padding:2px 8px;border-radius:99px;font-weight:800;margin-left:8px;vertical-align:middle;}
+
+    /* ── MAIN LAYOUT ── */
+    .sp-main{display:flex;flex:1;overflow:hidden;}
+
+    /* ── SIDEBAR ── */
+    .sp-sidebar{width:320px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+      overflow-y:auto;display:flex;flex-direction:column;padding:20px;}
+    .sp-sidebar::-webkit-scrollbar{width:3px;}
+    .sp-sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+    .sp-section{margin-bottom:24px;}
+    .sp-section-title{font-family:'Syne',sans-serif;font-size:.6rem;font-weight:600;
+      letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+
+    .sp-ex-card{padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface);
+      cursor:pointer;transition:all .2s;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+    .sp-ex-card:hover{border-color:var(--accent);background:rgba(0,229,255,0.03);transform:translateX(3px);}
+    .sp-ex-card.active{border-color:var(--accent);background:rgba(0,229,255,0.08);box-shadow:0 0 15px rgba(0,229,255,0.15);}
+    .sp-ex-icon{font-size:1.6rem;flex-shrink:0;}
+    .sp-ex-info{flex:1;}
+    .sp-ex-name{display:block;font-size:.8rem;font-weight:700;color:var(--text);}
+    .sp-ex-desc{display:block;font-size:.6rem;color:var(--muted);margin-top:2px;line-height:1.4;}
+
+    .sp-mode-card{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);
+      cursor:pointer;transition:all .2s;margin-bottom:6px;font-size:.7rem;}
+    .sp-mode-card:hover{border-color:var(--accent);color:var(--accent);}
+    .sp-mode-card.active{border-color:var(--accent);background:rgba(0,229,255,0.08);color:var(--accent);}
+
+    .sp-param-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+    .sp-param-label{font-size:.7rem;color:var(--muted);}
+    .sp-param-val{font-size:.7rem;color:var(--accent);min-width:36px;text-align:right;}
+    input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--border);
+      border-radius:2px;outline:none;cursor:pointer;margin-bottom:12px;}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+      background:var(--accent);box-shadow:0 0 8px var(--accent);}
+
+    .btn{border:none;cursor:pointer;font-family:inherit;font-size:.75rem;letter-spacing:.04em;
+      border-radius:10px;padding:12px 20px;transition:all .18s;white-space:nowrap;width:100%;text-align:center;}
+    .btn-primary{background:var(--accent);color:#000;font-weight:700;}
+    .btn-primary:hover{background:#33eaff;box-shadow:0 0 16px rgba(0,229,255,0.4);}
+    .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+    .btn-ghost:hover{color:var(--text);border-color:var(--muted);}
+    .btn-back{background:transparent;border:1px solid var(--border);color:var(--muted);
+      border-radius:8px;padding:8px 12px;cursor:pointer;font-family:inherit;font-size:.75rem;width:auto;}
+    .btn-back:hover{color:var(--text);border-color:var(--muted);}
+
+    /* ── ARENA ── */
+    .sp-arena-wrap{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+    #sp-canvas{flex:1;display:block;width:100%;height:100%;cursor:crosshair;}
+
+    /* ── HUD ── */
+    .sp-hud{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:16px;
+      background:rgba(8,12,16,.85);backdrop-filter:blur(10px);border:1px solid var(--border);
+      border-radius:14px;padding:8px 20px;z-index:10;pointer-events:none;opacity:0;transition:opacity .4s;}
+    .sp-hud.visible{opacity:1;}
+    .sp-hud-item{text-align:center;}
+    .sp-hud-val{display:block;font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);}
+    .sp-hud-label{display:block;font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+
+    /* ── OVERLAY (welcome / results) ── */
+    .sp-overlay{position:absolute;inset:0;background:rgba(8,12,16,0.97);backdrop-filter:blur(20px);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;
+      text-align:center;padding:40px;transition:opacity .5s;}
+    .sp-overlay.hidden{opacity:0;pointer-events:none;}
+    .sp-overlay h2{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;margin-bottom:12px;}
+    .sp-overlay p{font-size:.85rem;color:var(--muted);margin-bottom:24px;max-width:400px;line-height:1.6;}
+
+    /* Results */
+    .sp-results-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:24px 0;max-width:360px;width:100%;}
+    .sp-result-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;}
+    .sp-result-val{display:block;font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:var(--accent);}
+    .sp-result-label{display:block;font-size:.6rem;color:var(--muted);margin-top:4px;text-transform:uppercase;}
+
+    /* ── MOBILE ── */
+    @media(max-width:768px){
+      .sp-sidebar{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;z-index:200;
+        transform:translateX(-100%);transition:transform var(--trans);}
+      .sp-sidebar.open{transform:translateX(0);}
+      .sp-header .btn-menu{display:flex;}
+    }
+    @media(min-width:769px){
+      .btn-menu{display:none !important;}
+    }
+    .btn-menu{background:transparent;border:1px solid var(--border);color:var(--muted);
+      border-radius:8px;padding:6px 10px;cursor:pointer;font-size:1rem;display:none;align-items:center;}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="sp-header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="dashboard.html" class="btn-back">← Retour</a>
+    <div class="sp-logo">Ocu<span>Flow</span> <span class="sp-badge">SPÉCIAUX</span></div>
+  </div>
+  <button class="btn-menu" id="btn-menu" onclick="toggleSidebar()">☰</button>
+</div>
+
+<div class="sp-main">
+  <!-- SIDEBAR -->
+  <div class="sp-sidebar" id="sp-sidebar">
+    <!-- Exercise Selection -->
+    <div class="sp-section">
+      <div class="sp-section-title">Exercice</div>
+      <div id="ex-list"></div>
+    </div>
+
+    <!-- Mode Selection -->
+    <div class="sp-section">
+      <div class="sp-section-title">Mode d'Entraînement</div>
+      <div id="mode-list"></div>
+    </div>
+
+    <!-- Parameters -->
+    <div class="sp-section">
+      <div class="sp-section-title">Paramètres</div>
+      <div class="sp-param-row">
+        <span class="sp-param-label">Durée</span>
+        <span class="sp-param-val" id="dur-val">2 min</span>
+      </div>
+      <input type="range" id="dur-slider" min="60" max="300" step="30" value="120">
+      <div id="params-container"></div>
+    </div>
+
+    <!-- Start Button -->
+    <div style="margin-top:auto;padding-top:20px;">
+      <button class="btn btn-primary" id="start-btn" onclick="startExercise()">▶ Démarrer</button>
+    </div>
+  </div>
+
+  <!-- ARENA -->
+  <div class="sp-arena-wrap">
+    <!-- HUD -->
+    <div class="sp-hud" id="sp-hud">
+      <div class="sp-hud-item">
+        <span class="sp-hud-val" id="hud-time">00:00</span>
+        <span class="sp-hud-label">Temps</span>
+      </div>
+      <div class="sp-hud-item">
+        <span class="sp-hud-val" id="hud-score">0</span>
+        <span class="sp-hud-label">Score</span>
+      </div>
+      <div class="sp-hud-item">
+        <span class="sp-hud-val" id="hud-hits">0</span>
+        <span class="sp-hud-label">Trouvés</span>
+      </div>
+      <div class="sp-hud-item">
+        <span class="sp-hud-val" id="hud-accuracy">--%</span>
+        <span class="sp-hud-label">Précision</span>
+      </div>
+    </div>
+
+    <canvas id="sp-canvas"></canvas>
+
+    <!-- Welcome Overlay -->
+    <div class="sp-overlay" id="overlay-welcome">
+      <div style="font-size:3rem;margin-bottom:16px;" id="ov-icon">🔺</div>
+      <h2 id="ov-name">Réseau Fractal</h2>
+      <p id="ov-desc">Sélectionnez un exercice et un mode dans le panneau latéral, puis appuyez sur Démarrer.</p>
+    </div>
+
+    <!-- Results Overlay -->
+    <div class="sp-overlay hidden" id="overlay-results">
+      <div style="font-size:3rem;margin-bottom:16px;">✨</div>
+      <h2>Session Terminée !</h2>
+      <div class="sp-results-grid" id="results-grid"></div>
+      <div style="display:flex;gap:12px;margin-top:12px;">
+        <button class="btn btn-ghost" onclick="returnToDashboard()" style="width:auto;padding:12px 24px;">← Dashboard</button>
+        <button class="btn btn-primary" onclick="restartExercise()" style="width:auto;padding:12px 24px;">▶ Rejouer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/special-exercises.js"></script>
+<script>
+'use strict';
+
+// ── PREMIUM GATE ────────────────────────────────────────────────────────────
+(function checkAccess() {
+  const user = JSON.parse(localStorage.getItem('ocuflow_user') || '{}');
+  const plan = user.plan_type || 'free';
+  if (plan === 'free') {
+    alert('🔒 Les Exercices Spéciaux sont réservés aux abonnés Premium et Pro.\n\nMettez à jour votre forfait pour y accéder !');
+    window.location.href = 'index.html#pricing';
+    return;
+  }
+})();
+
+StorageManager.init();
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+let selectedExIdx = 0;
+let selectedModeIdx = 0;
+let duration = 120;
+let paramValues = {};
+let currentExercise = null;
+let hudInterval = null;
+
+const canvas = document.getElementById('sp-canvas');
+const hud = document.getElementById('sp-hud');
+const overlayWelcome = document.getElementById('overlay-welcome');
+const overlayResults = document.getElementById('overlay-results');
+
+// ── BUILD UI ────────────────────────────────────────────────────────────────
+function buildExerciseList() {
+  const container = document.getElementById('ex-list');
+  container.innerHTML = '';
+  SPECIAL_EXERCISES.forEach((ex, i) => {
+    const card = document.createElement('div');
+    card.className = `sp-ex-card ${i === selectedExIdx ? 'active' : ''}`;
+    card.innerHTML = `
+      <span class="sp-ex-icon">${ex.icon}</span>
+      <div class="sp-ex-info">
+        <span class="sp-ex-name">${ex.name}</span>
+        <span class="sp-ex-desc">${ex.desc}</span>
+      </div>
+    `;
+    card.onclick = () => { selectedExIdx = i; selectedModeIdx = 0; buildUI(); };
+    container.appendChild(card);
+  });
+}
+
+function buildModeList() {
+  const container = document.getElementById('mode-list');
+  container.innerHTML = '';
+  const ex = SPECIAL_EXERCISES[selectedExIdx];
+  ex.modes.forEach((mode, i) => {
+    const card = document.createElement('div');
+    card.className = `sp-mode-card ${i === selectedModeIdx ? 'active' : ''}`;
+    card.innerHTML = `<strong>${mode.name}</strong> — ${mode.desc}`;
+    card.onclick = () => { selectedModeIdx = i; buildUI(); };
+    container.appendChild(card);
+  });
+}
+
+function buildParams() {
+  const container = document.getElementById('params-container');
+  container.innerHTML = '';
+  const ex = SPECIAL_EXERCISES[selectedExIdx];
+  ex.params.forEach(p => {
+    if (!paramValues[p.key]) paramValues[p.key] = p.default;
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <div class="sp-param-row">
+        <span class="sp-param-label">${p.label}</span>
+        <span class="sp-param-val" id="pval-${p.key}">${paramValues[p.key]}</span>
+      </div>
+      <input type="range" id="pslider-${p.key}" min="${p.min}" max="${p.max}" step="${p.step}" value="${paramValues[p.key]}">
+    `;
+    container.appendChild(row);
+    const slider = document.getElementById(`pslider-${p.key}`);
+    slider.oninput = (e) => {
+      paramValues[p.key] = parseFloat(e.target.value);
+      document.getElementById(`pval-${p.key}`).textContent = paramValues[p.key];
+    };
+  });
+}
+
+function buildUI() {
+  buildExerciseList();
+  buildModeList();
+  buildParams();
+  updateOverview();
+}
+
+function updateOverview() {
+  const ex = SPECIAL_EXERCISES[selectedExIdx];
+  document.getElementById('ov-icon').textContent = ex.icon;
+  document.getElementById('ov-name').textContent = ex.name;
+  document.getElementById('ov-desc').textContent = ex.modes[selectedModeIdx].desc;
+}
+
+// ── DURATION SLIDER ─────────────────────────────────────────────────────────
+const durSlider = document.getElementById('dur-slider');
+const durVal = document.getElementById('dur-val');
+durSlider.oninput = (e) => {
+  duration = parseInt(e.target.value);
+  durVal.textContent = duration >= 60 ? Math.floor(duration / 60) + ' min' : duration + 's';
+};
+
+// ── START / STOP ────────────────────────────────────────────────────────────
+function startExercise() {
+  const ex = SPECIAL_EXERCISES[selectedExIdx];
+  const mode = ex.modes[selectedModeIdx];
+
+  const options = {
+    mode: mode.id,
+    duration: duration,
+    ...paramValues
+  };
+
+  currentExercise = new ex.ExClass(canvas, options);
+  currentExercise.onFinish = showResults;
+
+  overlayWelcome.classList.add('hidden');
+  overlayResults.classList.add('hidden');
+  hud.classList.add('visible');
+
+  // Resize canvas
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+
+  currentExercise.start();
+  startHUD();
+
+  // Close sidebar on mobile
+  document.getElementById('sp-sidebar').classList.remove('open');
+}
+
+function startHUD() {
+  if (hudInterval) clearInterval(hudInterval);
+  hudInterval = setInterval(() => {
+    if (!currentExercise || !currentExercise.running) return;
+    const remaining = Math.max(0, duration - currentExercise.elapsed);
+    document.getElementById('hud-time').textContent = SpecialUtils.formatTime(remaining);
+    const summary = currentExercise.score.getSummary();
+    document.getElementById('hud-score').textContent = summary.score;
+    document.getElementById('hud-hits').textContent = summary.hits;
+    document.getElementById('hud-accuracy').textContent = summary.accuracy + '%';
+  }, 200);
+}
+
+function showResults(summary) {
+  hud.classList.remove('visible');
+  overlayResults.classList.remove('hidden');
+  if (hudInterval) clearInterval(hudInterval);
+
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = `
+    <div class="sp-result-card" style="grid-column:span 2;border-color:var(--accent);">
+      <span class="sp-result-val" style="font-size:2rem;">${summary.score}</span>
+      <span class="sp-result-label">Score Total</span>
+    </div>
+    <div class="sp-result-card">
+      <span class="sp-result-val">${summary.hits}</span>
+      <span class="sp-result-label">Trouvés</span>
+    </div>
+    <div class="sp-result-card">
+      <span class="sp-result-val">${summary.accuracy}%</span>
+      <span class="sp-result-label">Précision</span>
+    </div>
+    <div class="sp-result-card">
+      <span class="sp-result-val">${summary.avgReaction}ms</span>
+      <span class="sp-result-label">Réaction Moy.</span>
+    </div>
+    <div class="sp-result-card">
+      <span class="sp-result-val">${summary.bestReaction}ms</span>
+      <span class="sp-result-label">Meilleur</span>
+    </div>
+  `;
+
+  // Save session via StorageManager (local)
+  const ex = SPECIAL_EXERCISES[selectedExIdx];
+  const exerciseKey = `special_${ex.id}_${ex.modes[selectedModeIdx].id}`;
+  StorageManager.saveSession(duration, [exerciseKey]);
+
+  // Persist to backend API
+  const token = localStorage.getItem('ocuflow_token');
+  if (token) {
+    fetch(`${typeof API_BASE !== 'undefined' ? API_BASE : ''}/api/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        duration: duration,
+        exercises: [exerciseKey],
+        score: summary
+      })
+    }).catch(err => console.warn('Session API save failed:', err));
+  }
+}
+
+function restartExercise() {
+  overlayResults.classList.add('hidden');
+  startExercise();
+}
+
+function returnToDashboard() {
+  window.location.href = 'dashboard.html';
+}
+
+function toggleSidebar() {
+  document.getElementById('sp-sidebar').classList.toggle('open');
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+buildUI();
+</script>
+</body>
+</html>

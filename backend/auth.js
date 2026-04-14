@@ -242,12 +242,177 @@ router.post('/login', async (req, res) => {
         is_premium: user.is_premium,
         plan_type: user.plan_type || 'free',
         role: user.role || 'user',
+        first_name: user.first_name,
+        last_name: user.last_name,
         country: country
       } 
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur lors de la connexion.' });
+  }
+});
+
+// ===== GESTION D'ÉQUIPE (PRO) =====
+
+// Ajouter un membre à l'équipe
+router.post('/team/add', auth, async (req, res) => {
+  const { email, password, first_name, last_name, department } = req.body;
+  
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email et mot de passe requis.' });
+  }
+
+  try {
+    // Vérifier que l'utilisateur est PRO/admin
+    const managerRes = await db.query('SELECT id, role FROM users WHERE id = ?', [req.user.id]);
+    const manager = managerRes.rows[0];
+    if (!manager || (manager.role !== 'pro' && manager.role !== 'admin')) {
+      return res.status(403).json({ error: 'Seuls les comptes PRO peuvent gérer une équipe.' });
+    }
+
+    // Vérifier si l'email existe déjà
+    const existing = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
+    }
+
+    // Créer le membre
+    const bcrypt = require('bcryptjs');
+    const hash = await bcrypt.hash(password, 10);
+    const result = await db.query(
+      'INSERT INTO users (email, password_hash, first_name, last_name, department, parent_id, role, plan_type, is_premium, xp, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 1)',
+      [email, hash, first_name || null, last_name || null, department || null, req.user.id, 'user', 'pro']
+    );
+
+    res.status(201).json({ 
+      message: 'Membre ajouté avec succès.',
+      member: { id: result.insertId, email, first_name, last_name, department }
+    });
+  } catch (err) {
+    console.error('Team add error:', err);
+    res.status(500).json({ error: 'Erreur lors de l\'ajout du membre.' });
+  }
+});
+
+// Lister les membres (avec pagination et recherche)
+router.get('/team/members', auth, async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const search = req.query.search || '';
+  const offset = (page - 1) * limit;
+
+  try {
+    let whereClause = 'WHERE u.parent_id = ?';
+    let params = [req.user.id];
+
+    if (search) {
+      whereClause += ' AND (u.email LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ? OR u.department LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+
+    // Get total count
+    const countRes = await db.query(`SELECT COUNT(*) as total FROM users u ${whereClause}`, params);
+    const total = countRes.rows[0].total;
+
+    // Get paginated members with session count
+    const membersRes = await db.query(`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.department, u.xp, u.level, u.created_at, u.last_login,
+             (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id) as sessions_count,
+             (SELECT AVG(et.score) FROM eye_tests et WHERE et.user_id = u.id) as avg_health
+      FROM users u
+      ${whereClause}
+      ORDER BY u.created_at DESC
+      LIMIT ? OFFSET ?
+    `, [...params, limit, offset]);
+
+    res.json({
+      members: membersRes.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error('Team list error:', err);
+    res.status(500).json({ error: 'Erreur lors de la récupération des membres.' });
+  }
+});
+
+// Supprimer un membre
+router.delete('/team/members/:id', auth, async (req, res) => {
+  try {
+    const result = await db.query(
+      'DELETE FROM users WHERE id = ? AND parent_id = ?',
+      [req.params.id, req.user.id]
+    );
+    if (result.rows.affectedRows === 0) {
+      return res.status(404).json({ error: 'Membre non trouvé ou non autorisé.' });
+    }
+    res.json({ message: 'Membre supprimé.' });
+  } catch (err) {
+    console.error('Team delete error:', err);
+    res.status(500).json({ error: 'Erreur suppression membre.' });
+  }
+});
+
+// Rappels d'équipe — Lire
+router.get('/team/settings', auth, async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM team_settings WHERE manager_id = ?', [req.user.id]);
+    if (result.rows.length === 0) {
+      return res.json({ fixedTimes: [], days: [1, 2, 3, 4, 5] });
+    }
+    const s = result.rows[0];
+    res.json({
+      fixedTimes: JSON.parse(s.fixed_times || '[]'),
+      days: JSON.parse(s.days || '[1,2,3,4,5]')
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur rappels.' });
+  }
+});
+
+// Rappels d'équipe — Sauvegarder
+router.post('/team/settings', auth, async (req, res) => {
+  const { settings } = req.body;
+  try {
+    const existing = await db.query('SELECT id FROM team_settings WHERE manager_id = ?', [req.user.id]);
+    if (existing.rows.length > 0) {
+      await db.query(
+        'UPDATE team_settings SET fixed_times = ?, days = ? WHERE manager_id = ?',
+        [JSON.stringify(settings.fixedTimes), JSON.stringify(settings.days), req.user.id]
+      );
+    } else {
+      await db.query(
+        'INSERT INTO team_settings (manager_id, fixed_times, days) VALUES (?, ?, ?)',
+        [req.user.id, JSON.stringify(settings.fixedTimes), JSON.stringify(settings.days)]
+      );
+    }
+    res.json({ message: 'Rappels enregistrés.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur sauvegarde rappels.' });
+  }
+});
+
+// ===== AVIS / TÉMOIGNAGE =====
+router.post('/testimonials', auth, async (req, res) => {
+  const { content } = req.body;
+  if (!content || content.trim().length < 5) {
+    return res.status(400).json({ error: 'Votre avis doit contenir au moins 5 caractères.' });
+  }
+  try {
+    await db.query(
+      'INSERT INTO testimonials (user_id, email, content, status) VALUES (?, ?, ?, ?)',
+      [req.user.id, req.user.email || 'Anonyme', content.trim(), 'pending']
+    );
+    res.status(201).json({ message: 'Merci pour votre avis ! Il sera examiné sous peu.' });
+  } catch (err) {
+    console.error('Testimonial error:', err);
+    res.status(500).json({ error: 'Erreur lors de l\'envoi de votre avis.' });
   }
 });
 

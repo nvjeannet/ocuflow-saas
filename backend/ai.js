@@ -45,7 +45,21 @@ router.get('/health-score', auth, async (req, res) => {
     );
     const lastTestScore = testsRes.rows.length > 0 ? testsRes.rows[0].score : null;
 
-    // 3. Calcul de l'algorithme "Ocu-Health"
+    // 3. Récupérer la configuration IA
+    const configRes = await db.query('SELECT * FROM ai_config');
+    const config = {};
+    configRes.rows.forEach(r => {
+      config[r.param_key] = typeof r.param_value === 'string' ? JSON.parse(r.param_value) : r.param_value;
+    });
+
+    const thresholds = config.thresholds || { excellent: 80, fatigue: 50 };
+    const recsTemplate = config.recommendations || {
+      excellent: ["Votre discipline porte ses fruits. Continuez ainsi !"],
+      fatigue: ["Augmentez la fréquence de vos pauses 20-20-20."],
+      alert: ["Repos immédiat conseillé."]
+    };
+
+    // 4. Calcul de l'algorithme "Ocu-Health"
     let score = 50; // Base
     
     // Impact Sessions (Max +30)
@@ -63,41 +77,38 @@ router.get('/health-score', auth, async (req, res) => {
     // Capé entre 0 et 100
     score = Math.max(0, Math.min(100, score));
 
-    // 4. Génération de conseils dynamiques
+    // 5. Génération de conseils dynamiques
     let recommendations = [];
     let label = "Stable";
     let color = "#3b82f6";
 
-    if (score >= 80) {
+    if (score >= thresholds.excellent) {
       label = "Excellent";
       color = "#10b981";
-      recommendations = [
-        "Votre discipline porte ses fruits. Continuez ainsi !",
-        "Essayez une routine de 'Musculation Oculaire' pour repousser vos limites."
-      ];
-    } else if (score >= 50) {
+      recommendations = recsTemplate.excellent;
+    } else if (score >= thresholds.fatigue) {
       label = "Fatigue Modérée";
       color = "#f59e0b";
-      recommendations = [
-        "Augmentez la fréquence de vos pauses 20-20-20.",
-        "Une séance de palmage ce soir aiderait à détendre vos muscles."
-      ];
+      recommendations = [...recsTemplate.fatigue];
       if (sessionCount < 3) recommendations.push("L'IA suggère au moins 3 sessions par semaine pour stabiliser votre score.");
     } else {
       label = "Alerte Surmenage";
       color = "#ef4444";
-      recommendations = [
-        "Repos immédiat conseillé : éloignez-vous des écrans 30 minutes.",
-        "Pratiquez la routine 'Relaxation Profonde' dès maintenant.",
-        "Réduisez la luminosité de votre écran."
-      ];
+      recommendations = recsTemplate.alert;
+    }
+
+    // 5. Sélection aléatoire pour éviter la monotonie
+    let finalRecs = recommendations;
+    if (Array.isArray(finalRecs) && finalRecs.length > 0) {
+      // Mélange simple (Fisher-Yates light)
+      finalRecs = [...finalRecs].sort(() => 0.5 - Math.random());
     }
 
     res.json({
       score,
       label,
       color,
-      recommendations,
+      recommendations: finalRecs,
       stats: {
         sessionsLast7Days: sessionCount,
         lastVisionTest: lastTestScore

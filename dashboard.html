@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/core.js"></script>
+  <script src="js/movements.js"></script>
   <style>
     select { background-color: var(--panel) !important; color: var(--text) !important; }
     option { background-color: var(--panel); color: var(--text); }
@@ -36,13 +37,30 @@
     .xp-fill { height: 100%; background: var(--gradient-primary); width: 0%; transition: width 1s ease-in-out; }
     .level-badge { background: var(--gradient-vivid); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 800; margin-left: 8px; vertical-align: middle; }
 
-    .day-toggle {
-      width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border);
-      background: transparent; color: var(--muted); cursor: pointer; font-size: 0.7rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    .btn-ghost { 
+      color: white !important; 
+      background: rgba(255,255,255,0.08) !important; 
+      border: 1px solid rgba(255,255,255,0.15) !important; 
     }
-    .day-toggle:hover { border-color: var(--accent); color: var(--accent); }
-    .day-toggle.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.15) !important; }
+
+    .sub-tabs { display: flex; gap: 20px; border-bottom: 1px solid var(--border); margin-bottom: 30px; }
+    .sub-tab { padding: 12px 4px; font-size: 0.85rem; font-weight: 700; color: var(--muted); cursor: pointer; position: relative; transition: 0.3s; }
+    .sub-tab.active { color: white; }
+    .sub-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--accent); }
+
+    .team-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .team-table th { text-align: left; padding: 12px; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    .team-table td { padding: 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .team-row:hover { background: rgba(255,255,255,0.02); }
+    
+    .search-bar { position: relative; flex: 1; min-width: 250px; }
+    .search-bar i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .search-bar input { width: 100%; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px 10px 36px; color: white; }
+    
+    .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 24px; }
+    .page-btn { background: var(--panel); border: 1px solid var(--border); color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body class="theme-dark">
@@ -62,6 +80,12 @@
       <ul class="sidebar-nav">
         <li class="sidebar-item active" onclick="switchTab('focus')" id="nav-focus">
           <i>🎯</i> Mon Focus
+        </li>
+        <li class="sidebar-item" onclick="switchTab('routines')" id="nav-routines">
+          <i>🔄</i> Routines
+        </li>
+        <li class="sidebar-item" onclick="handleSpecialClick()" id="nav-special">
+          <i>🧪</i> Exercices Spéciaux <span id="special-badge" style="font-size:0.6rem; opacity:0.7; margin-left:4px;">(Premium)</span>
         </li>
         <li class="sidebar-item" onclick="switchTab('team')" id="nav-team" style="display:none;">
           <i>👥</i> Mon Équipe
@@ -148,37 +172,126 @@
         </div>
       </div>
 
+      <!-- Tab: Routines -->
+      <div id="tab-routines" class="tab-pane">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;flex-wrap:wrap;gap:16px;">
+            <h2 style="font-size:2rem;">🔄 Mes Routines</h2>
+            <button class="btn btn-primary" onclick="createNewRoutine()" style="width:auto;">+ Nouvelle Routine</button>
+          </div>
+
+          <!-- Routine Editor (hidden by default) -->
+          <div id="routine-editor" style="display:none;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:30px;margin-bottom:30px;">
+            <h4 style="font-size:1rem;margin-bottom:20px;color:white;">✏️ Éditeur de Routine</h4>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+              <div>
+                <label style="display:block;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Nom</label>
+                <input type="text" id="edit-name" placeholder="Ma Routine" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:12px;color:white;">
+              </div>
+              <div>
+                <label style="display:block;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Durée (sec)</label>
+                <input type="number" id="edit-dur" value="120" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:12px;color:white;">
+              </div>
+            </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-weight:700;">Description</label>
+              <input type="text" id="edit-desc" placeholder="Description courte" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;padding:12px;color:white;">
+            </div>
+            <div style="margin-bottom:20px;">
+              <label style="display:block;font-size:0.7rem;color:var(--muted);text-transform:uppercase;margin-bottom:12px;font-weight:700;">Exercices</label>
+              <div id="edit-ex-selector" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;"></div>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <button class="btn btn-ghost" onclick="closeRoutineEditor()" style="flex:1;">Annuler</button>
+              <button class="btn btn-primary" onclick="saveCurrentRoutine()" style="flex:1;">Enregistrer</button>
+            </div>
+          </div>
+
+          <!-- Routines List -->
+          <div id="routines-list-container">
+            <div id="routines-list" style="display:grid;grid-template-columns:1fr;gap:12px;"></div>
+          </div>
+
+          <!-- Special Exercises Card -->
+          <div id="special-exercises-card" style="margin-top:40px;background:linear-gradient(135deg, rgba(0,229,255,0.08), rgba(123,97,255,0.08));border:1px solid rgba(0,229,255,0.2);border-radius:24px;padding:30px;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <div style="font-size:2.5rem;">🧪</div>
+              <div style="flex:1;min-width:200px;">
+                <h3 style="font-size:1.1rem;margin-bottom:4px;color:white;">Exercices Spéciaux</h3>
+                <p style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Réseau Fractal, Points Lumineux, Nuage de Points — des exercices interactifs avancés sur Canvas.</p>
+              </div>
+              <button class="btn btn-primary" onclick="handleSpecialClick()" style="width:auto;padding:12px 24px;">Accéder →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Mon Équipe (PRO Only) -->
       <div id="tab-team" class="tab-pane">
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:30px;padding:40px;margin-bottom:40px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;">
             <h2 style="font-size:2rem;">👥 Gestion de l'Équipe</h2>
-            <button class="btn btn-primary" onclick="showAddMemberModal()">+ Ajouter un membre</button>
+            <div style="display:flex; gap:12px;">
+              <button class="btn btn-primary" onclick="showAddMemberModal()">+ Ajouter un membre</button>
+            </div>
           </div>
           
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:40px;">
-            <div class="stat-card"><span class="stat-val" id="team-total-members">0</span><span class="stat-label">Membres Actifs</span></div>
-            <div class="stat-card"><span class="stat-val" id="team-total-sessions">0</span><span class="stat-label">Séances ce mois</span></div>
-            <div class="stat-card"><span class="stat-val" id="team-avg-health">0%</span><span class="stat-label">Santé Moyenne</span></div>
+          <div class="sub-tabs">
+            <div class="sub-tab active" onclick="switchSubTab('members')" id="tab-btn-members">Collaborateurs</div>
+            <div class="sub-tab" onclick="switchSubTab('reminders')" id="tab-btn-reminders">Rappels Globaux</div>
           </div>
 
-          <!-- Section: Rappels d'Équipe -->
-          <div style="margin-bottom:40px; background:rgba(59,130,246,0.05); padding:24px; border-radius:24px; border:1px solid rgba(59,130,246,0.1);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-              <h4 style="font-size:0.85rem; color:white; margin:0;">🕗 Rappels d'Équipe (Global)</h4>
-              <button class="btn btn-primary" onclick="saveTeamSettings()" style="padding:6px 16px; font-size:0.7rem;">Enregistrer</button>
+          <!-- Sub-tab: Members List -->
+          <div id="sub-pane-members" class="sub-pane">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:40px;">
+              <div class="stat-card"><span class="stat-val" id="team-total-members">0</span><span class="stat-label">Membres Actifs</span></div>
+              <div class="stat-card"><span class="stat-val" id="team-total-sessions">0</span><span class="stat-label">Séances ce mois</span></div>
+              <div class="stat-card"><span class="stat-val" id="team-avg-health">0%</span><span class="stat-label">Santé Moyenne Team</span></div>
             </div>
-            <p style="font-size:0.75rem; color:var(--muted); margin-bottom:20px;">Programmez des rappels automatiques pour tous vos collaborateurs.</p>
-            
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
-              <div style="background:var(--panel); padding:16px; border-radius:16px; border:1px solid var(--border);">
-                <span style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:12px;">Heures de rappel</span>
-                <div id="team-fixed-times" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
-                <input type="time" id="add-team-time" class="btn btn-ghost" style="width:100%; font-size:0.75rem; padding:8px; border:1px solid var(--border);">
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+              <div class="search-bar">
+                <i>🔍</i>
+                <input type="text" id="member-search" placeholder="Rechercher par nom, email ou service..." oninput="debounceSearch()">
               </div>
-              <div style="background:var(--panel); padding:16px; border-radius:16px; border:1px solid var(--border);">
-                <span style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:12px;">Jours de la semaine</span>
-                <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            </div>
+
+            <div style="background:var(--panel); border:1px solid var(--border); border-radius:24px; overflow:hidden;">
+              <table class="team-table">
+                <thead>
+                  <tr>
+                    <th>Collaborateur</th>
+                    <th>Service</th>
+                    <th>Niveau</th>
+                    <th>Santé</th>
+                    <th>Séances</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="team-members-list-body">
+                  <!-- JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination">
+              <span style="font-size:0.75rem; color:var(--muted);" id="pagination-info">Page 1 sur 1</span>
+              <div style="display:flex; gap:8px;">
+                <button class="page-btn" id="prev-page" onclick="changePage(-1)" disabled>Précédent</button>
+                <button class="page-btn" id="next-page" onclick="changePage(1)" disabled>Suivant</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tab: Reminders Settings -->
+          <div id="sub-pane-reminders" class="sub-pane" style="display:none;">
+            <div style="max-width:600px; background:rgba(59,130,246,0.05); padding:32px; border-radius:24px; border:1px solid rgba(59,130,246,0.1);">
+              <h4 style="font-size:1.1rem; color:white; margin-bottom:12px;">🕗 Rappels d'Équipe Automatisés</h4>
+              <p style="font-size:0.85rem; color:var(--muted); margin-bottom:32px;">Configurez les heures de pause visuelle pour l'ensemble de vos collaborateurs.</p>
+              
+              <div style="margin-bottom:24px;">
+                <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; font-weight:700; display:block; margin-bottom:12px;">Planification Hebdomadaire</label>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
                   <button class="day-toggle" data-day="1">L</button>
                   <button class="day-toggle" data-day="2">M</button>
                   <button class="day-toggle" data-day="3">M</button>
@@ -188,11 +301,19 @@
                   <button class="day-toggle" data-day="0">D</button>
                 </div>
               </div>
+
+              <div style="margin-bottom:32px;">
+                <label style="font-size:0.75rem; color:var(--muted); text-transform:uppercase; font-weight:700; display:block; margin-bottom:12px;">Heures de rappel (Poste local)</label>
+                <div id="team-fixed-times" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px;"></div>
+                <div style="display:flex; gap:10px;">
+                  <input type="time" id="add-team-time" class="btn btn-ghost" style="flex:1; padding:12px; border-radius:12px;">
+                  <button class="btn btn-primary" onclick="addTeamTime()" style="padding:0 24px;">+ Ajouter</button>
+                </div>
+              </div>
+
+              <button class="btn btn-primary" onclick="saveTeamSettings()" style="width:100%; padding:16px;">Enregistrer les changements</button>
             </div>
           </div>
-
-          <h4 style="font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px;">Liste des Collaborateurs</h4>
-          <div id="team-members-list-new" style="display:flex;flex-direction:column;gap:12px;"></div>
         </div>
       </div>
 
@@ -240,6 +361,7 @@
                 <button class="btn btn-ghost theme-btn" data-theme="forest">Forêt</button>
                 <button class="btn btn-ghost theme-btn" data-theme="sepia">Sépia</button>
               </div>
+              <div id="theme-feedback" style="margin-top:12px;font-size:0.7rem;color:var(--accent);opacity:0;transition:opacity 0.3s;">✓ Thème appliqué !</div>
             </div>
             <div class="stat-card" style="text-align:left;padding:20px;">
               <span class="stat-label" style="margin-top:0;margin-bottom:12px;">🎭 Audio</span>
@@ -250,42 +372,70 @@
             </div>
           </div>
 
-          <div style="margin-top:40px; background:var(--panel); border:1px solid var(--border); border-radius:24px; padding:24px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-              <h4 style="font-size:0.85rem; color:white; margin:0;">⏰ Rappels Personnels</h4>
+          <!-- Rappels Personnels (Redesigned) -->
+          <div style="margin-top:40px; background:var(--panel); border:1px solid var(--border); border-radius:24px; padding:32px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+              <div>
+                <h4 style="font-size:1rem; color:white; margin:0 0 4px 0;">⏰ Rappels Personnels</h4>
+                <p style="font-size:0.7rem; color:var(--muted); margin:0;">Recevez des notifications pour vos pauses visuelles</p>
+              </div>
               <label class="toggle-switch"><input type="checkbox" id="personal-reminders-toggle"><span class="toggle-slider"></span></label>
             </div>
             
-            <div id="personal-reminders-config" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; border-top:1px solid var(--border); padding-top:20px; transition:0.3s;">
-              <div>
-                <span style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:12px;">Type de rappel</span>
-                <select id="reminder-type" class="btn btn-ghost" style="width:100%; font-size:0.75rem; text-align:left; padding:8px;">
-                  <option value="interval">Intervalle (Minutes)</option>
-                  <option value="fixed">Heures Fixes</option>
-                </select>
-                
-                <div id="interval-config" style="margin-top:16px;">
-                  <span style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Toutes les (min) :</span>
-                  <input type="number" id="reminder-interval" value="20" class="btn btn-ghost" style="width:100%; text-align:left; padding:8px;">
-                </div>
-                
-                <div id="fixed-config" style="margin-top:16px; display:none;">
-                  <span style="font-size:0.7rem; color:var(--muted); display:block; margin-bottom:8px;">Ajouter une heure :</span>
-                  <div id="personal-fixed-times" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;"></div>
-                  <input type="time" id="add-personal-time" class="btn btn-ghost" style="width:100%; font-size:0.75rem; padding:8px;">
+            <div id="personal-reminders-config" style="transition:0.3s;">
+              <!-- Mode Selector Cards -->
+              <div style="margin-bottom:24px;">
+                <span style="font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; display:block; margin-bottom:12px; font-weight:700;">Mode de rappel</span>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div id="mode-card-interval" class="reminder-mode-card" onclick="selectReminderMode('interval')" style="padding:16px; border-radius:16px; border:2px solid var(--border); background:var(--surface); cursor:pointer; transition:all 0.2s; text-align:center;">
+                    <div style="font-size:1.5rem; margin-bottom:8px;">🔁</div>
+                    <div style="font-size:0.8rem; font-weight:700; color:white; margin-bottom:4px;">Intervalle</div>
+                    <div style="font-size:0.65rem; color:var(--muted);">Toutes les X minutes</div>
+                  </div>
+                  <div id="mode-card-fixed" class="reminder-mode-card" onclick="selectReminderMode('fixed')" style="padding:16px; border-radius:16px; border:2px solid var(--border); background:var(--surface); cursor:pointer; transition:all 0.2s; text-align:center;">
+                    <div style="font-size:1.5rem; margin-bottom:8px;">🕐</div>
+                    <div style="font-size:0.8rem; font-weight:700; color:white; margin-bottom:4px;">Heures Fixes</div>
+                    <div style="font-size:0.65rem; color:var(--muted);">Choisissez vos horaires</div>
+                  </div>
                 </div>
               </div>
-              
+
+              <!-- Interval Config -->
+              <div id="interval-config" style="margin-bottom:24px; background:rgba(0,229,255,0.03); border:1px solid rgba(0,229,255,0.1); border-radius:16px; padding:20px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                  <span style="font-size:0.75rem; color:var(--muted);">Pause toutes les :</span>
+                  <span id="interval-display" style="font-size:1.1rem; font-weight:800; color:var(--accent);">20 min</span>
+                </div>
+                <input type="range" id="reminder-interval" min="10" max="90" step="5" value="20" style="width:100%; height:6px; -webkit-appearance:none; appearance:none; background:linear-gradient(to right, var(--accent), rgba(0,229,255,0.2)); border-radius:3px; outline:none; cursor:pointer;">
+                <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:var(--muted); margin-top:6px;">
+                  <span>10 min</span>
+                  <span>30 min</span>
+                  <span>60 min</span>
+                  <span>90 min</span>
+                </div>
+              </div>
+
+              <!-- Fixed Times Config -->
+              <div id="fixed-config" style="display:none; margin-bottom:24px; background:rgba(123,97,255,0.03); border:1px solid rgba(123,97,255,0.1); border-radius:16px; padding:20px;">
+                <span style="font-size:0.75rem; color:var(--muted); display:block; margin-bottom:12px;">Mes horaires de rappel :</span>
+                <div id="personal-fixed-times" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; min-height:36px;"></div>
+                <div style="display:flex; gap:10px;">
+                  <input type="time" id="add-personal-time" style="flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:10px 14px; color:white; font-size:0.85rem; font-family:inherit;">
+                  <button onclick="addPersonalTime()" class="btn btn-primary" style="width:auto; padding:10px 20px; font-size:0.8rem;">+ Ajouter</button>
+                </div>
+              </div>
+
+              <!-- Days -->
               <div>
-                <span style="font-size:0.7rem; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:12px;">Jours actifs</span>
-                <div style="display:flex; gap:4px; flex-wrap:wrap;">
-                  <button class="day-toggle personal-day-toggle" data-day="1">L</button>
-                  <button class="day-toggle personal-day-toggle" data-day="2">M</button>
-                  <button class="day-toggle personal-day-toggle" data-day="3">M</button>
-                  <button class="day-toggle personal-day-toggle" data-day="4">J</button>
-                  <button class="day-toggle personal-day-toggle" data-day="5">V</button>
-                  <button class="day-toggle personal-day-toggle" data-day="6" style="opacity:0.6;">S</button>
-                  <button class="day-toggle personal-day-toggle" data-day="0" style="opacity:0.6;">D</button>
+                <span style="font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; display:block; margin-bottom:12px; font-weight:700;">Jours actifs</span>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="day-toggle personal-day-toggle" data-day="1" style="width:42px;height:42px;border-radius:12px;font-weight:700;">L</button>
+                  <button class="day-toggle personal-day-toggle" data-day="2" style="width:42px;height:42px;border-radius:12px;font-weight:700;">M</button>
+                  <button class="day-toggle personal-day-toggle" data-day="3" style="width:42px;height:42px;border-radius:12px;font-weight:700;">M</button>
+                  <button class="day-toggle personal-day-toggle" data-day="4" style="width:42px;height:42px;border-radius:12px;font-weight:700;">J</button>
+                  <button class="day-toggle personal-day-toggle" data-day="5" style="width:42px;height:42px;border-radius:12px;font-weight:700;">V</button>
+                  <button class="day-toggle personal-day-toggle" data-day="6" style="width:42px;height:42px;border-radius:12px;font-weight:700;opacity:0.5;">S</button>
+                  <button class="day-toggle personal-day-toggle" data-day="0" style="width:42px;height:42px;border-radius:12px;font-weight:700;opacity:0.5;">D</button>
                 </div>
               </div>
             </div>
@@ -295,18 +445,6 @@
     </main>
   </div>
 
-  <!-- Modal: Ajouter un membre -->
-  <div id="add-member-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
-    <div style="background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:32px; width:400px; max-width:90%;">
-      <h3 style="margin-bottom:20px;">Ajouter un collaborateur</h3>
-      <input type="email" id="modal-member-email" placeholder="Email" class="btn btn-ghost" style="width:100%; text-align:left; margin-bottom:12px;">
-      <input type="password" id="modal-member-pass" placeholder="Mot de passe" class="btn btn-ghost" style="width:100%; text-align:left; margin-bottom:20px;">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-        <button class="btn btn-ghost" onclick="hideAddMemberModal()">Annuler</button>
-        <button class="btn btn-primary" onclick="addTeamMemberModal()">Ajouter</button>
-      </div>
-    </div>
-  </div>
 
   <script>
     StorageManager.init();
@@ -478,10 +616,25 @@
 
     function initSettingsUI() {
       const data = StorageManager.data;
+      
+      // Theme buttons — apply theme in-place WITHOUT reload
       document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.theme === data.theme);
-        btn.onclick = () => { data.theme = btn.dataset.theme; StorageManager.save(); location.reload(); };
+        btn.onclick = () => {
+          data.theme = btn.dataset.theme;
+          StorageManager.save();
+          // Apply theme CSS class in-place
+          document.body.className = document.body.className.replace(/theme-\w+/g, '');
+          if (data.theme !== 'dark') document.body.classList.add('theme-' + data.theme);
+          // Update active state
+          document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === data.theme));
+          // Show feedback
+          const fb = document.getElementById('theme-feedback');
+          fb.style.opacity = '1';
+          setTimeout(() => { fb.style.opacity = '0'; }, 2000);
+        };
       });
+
       const ambToggle = document.getElementById('ambiance-toggle');
       if (ambToggle) {
         ambToggle.checked = data.ambianceEnabled;
@@ -489,7 +642,10 @@
       }
 
       // Rappels Personnels
-      const r = data.reminders || { enabled: true, type: 'interval', value: 20, fixedTimes: [], days: [1,2,3,4,5] };
+      if (!data.reminders) data.reminders = {};
+      const rDefaults = { enabled: true, type: 'interval', value: 20, fixedTimes: [], days: [1,2,3,4,5] };
+      Object.keys(rDefaults).forEach(k => { if (data.reminders[k] === undefined) data.reminders[k] = rDefaults[k]; });
+      const r = data.reminders;
       const rToggle = document.getElementById('personal-reminders-toggle');
       const rConfig = document.getElementById('personal-reminders-config');
       
@@ -504,34 +660,52 @@
         StorageManager.save();
       };
 
-      const rType = document.getElementById('reminder-type');
-      rType.value = r.type;
-      document.getElementById('interval-config').style.display = r.type === 'interval' ? 'block' : 'none';
-      document.getElementById('fixed-config').style.display = r.type === 'fixed' ? 'block' : 'none';
-      
-      rType.onchange = (e) => {
-        r.type = e.target.value;
-        document.getElementById('interval-config').style.display = r.type === 'interval' ? 'block' : 'none';
-        document.getElementById('fixed-config').style.display = r.type === 'fixed' ? 'block' : 'none';
+      // Mode cards init
+      selectReminderMode(r.type, true);
+
+      // Interval slider
+      const rInterval = document.getElementById('reminder-interval');
+      rInterval.value = r.value;
+      document.getElementById('interval-display').textContent = r.value + ' min';
+      rInterval.oninput = (e) => {
+        r.value = parseInt(e.target.value);
+        document.getElementById('interval-display').textContent = r.value + ' min';
         StorageManager.save();
       };
 
-      const rInterval = document.getElementById('reminder-interval');
-      rInterval.value = r.value;
-      rInterval.onchange = (e) => { r.value = parseInt(e.target.value); StorageManager.save(); };
-
       renderPersonalFixedTimes(r);
       renderPersonalDays(r);
+    }
 
-      document.getElementById('add-personal-time').onchange = (e) => {
-        const val = e.target.value;
-        if (val && !r.fixedTimes.includes(val)) {
-          r.fixedTimes.push(val);
-          r.fixedTimes.sort();
-          StorageManager.save();
-          renderPersonalFixedTimes(r);
-        }
-      };
+    function selectReminderMode(mode, init) {
+      const r = StorageManager.data.reminders;
+      r.type = mode;
+      if (!init) StorageManager.save();
+      
+      // Update cards
+      const intervalCard = document.getElementById('mode-card-interval');
+      const fixedCard = document.getElementById('mode-card-fixed');
+      intervalCard.style.borderColor = mode === 'interval' ? 'var(--accent)' : 'var(--border)';
+      intervalCard.style.background = mode === 'interval' ? 'rgba(0,229,255,0.08)' : 'var(--surface)';
+      fixedCard.style.borderColor = mode === 'fixed' ? 'var(--accent)' : 'var(--border)';
+      fixedCard.style.background = mode === 'fixed' ? 'rgba(0,229,255,0.08)' : 'var(--surface)';
+      
+      // Show/hide configs
+      document.getElementById('interval-config').style.display = mode === 'interval' ? 'block' : 'none';
+      document.getElementById('fixed-config').style.display = mode === 'fixed' ? 'block' : 'none';
+    }
+
+    function addPersonalTime() {
+      const input = document.getElementById('add-personal-time');
+      const r = StorageManager.data.reminders;
+      const val = input.value;
+      if (val && !r.fixedTimes.includes(val)) {
+        r.fixedTimes.push(val);
+        r.fixedTimes.sort();
+        StorageManager.save();
+        renderPersonalFixedTimes(r);
+        input.value = '';
+      }
     }
 
     function renderPersonalFixedTimes(r) {
@@ -571,54 +745,233 @@
     function hideAddMemberModal() { document.getElementById('add-member-modal').style.display = 'none'; }
 
     function handleExtensionClick() {
-      const user = JSON.parse(localStorage.getItem('ocuflow_user'));
-      if (user.plan_type === 'free') {
+      const user = JSON.parse(localStorage.getItem('ocuflow_user') || '{}');
+      const plan = user.plan_type || (user.role === 'pro' ? 'pro' : (user.is_premium ? 'premium' : 'free'));
+      
+      if (plan === 'free') {
         alert("🚀 L'extension OcuFlow Companion est réservée aux membres Premium et PRO. \n\nMettez à jour votre forfait pour débloquer les rappels en arrière-plan et le Focus Mode !");
         window.location.href = 'index.html#pricing';
       } else {
-        alert("Pour installer l'extension : \n\n1. Allez sur chrome://extensions\n2. Activez le 'Mode Développeur' (en haut à droite)\n3. Cliquez sur 'Charger l'extension non empaquetée'\n4. Sélectionnez le dossier /extension de votre projet.");
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:3000;display:flex;align-items:center;justify-content:center;';
+        modal.innerHTML = `
+          <div style="background:var(--admin-sidebar,#1e293b);max-width:500px;padding:40px;border-radius:24px;border:1px solid var(--border);color:white;text-align:center;">
+            <div style="font-size:3rem;margin-bottom:16px;">🧩</div>
+            <h2 style="margin-bottom:16px;font-family:'Outfit',sans-serif;">Extension OcuFlow Focus</h2>
+            <p style="color:var(--muted);font-size:0.85rem;margin-bottom:24px;line-height:1.6;">Pour installer l'extension Chrome :</p>
+            <ol style="text-align:left;font-size:0.85rem;line-height:2;margin-bottom:24px;padding-left:20px;color:var(--muted);">
+              <li>Ouvrez <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;">chrome://extensions</code></li>
+              <li>Activez le <b style="color:white;">Mode Développeur</b></li>
+              <li>Cliquez sur <b style="color:white;">Charger l'extension non empaquetée</b></li>
+              <li>Sélectionnez le dossier <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;">/extension</code></li>
+            </ol>
+            <button onclick="this.closest('div').parentElement.remove()" class="btn btn-primary" style="width:100%;padding:14px;">Compris !</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
       }
     }
+    // --- TEAM MANAGEMENT ---
+    function showAddMemberModal() { document.getElementById('add-member-modal').style.display = 'flex'; }
+    function hideAddMemberModal() { document.getElementById('add-member-modal').style.display = 'none'; }
 
-    async function addTeamMemberModal() {
+    function switchSubTab(pane) {
+      document.querySelectorAll('.sub-pane').forEach(p => p.style.display = 'none');
+      document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('sub-pane-' + pane).style.display = 'block';
+      document.getElementById('tab-btn-' + pane).classList.add('active');
+      if (pane === 'members') loadTeamMembers();
+    }
+
+    async function addTeamMember() {
       const email = document.getElementById('modal-member-email').value;
-      const password = document.getElementById('modal-member-pass').value;
+      const pass = document.getElementById('modal-member-pass').value;
+      const fname = document.getElementById('modal-member-fname').value;
+      const lname = document.getElementById('modal-member-lname').value;
+      const dept = document.getElementById('modal-member-dept').value;
       const token = localStorage.getItem('ocuflow_token');
+
+      if (!email || !pass) { alert("Email et mot de passe requis."); return; }
+
       try {
         const res = await fetch(`${API_BASE}/auth/team/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password: pass, first_name: fname, last_name: lname, department: dept })
         });
-        if (res.ok) { alert("Membre ajouté !"); hideAddMemberModal(); loadTeamMembers(); }
-        else { const err = await res.json(); alert(err.error || "Erreur."); }
-      } catch(e) { console.error(e); }
+        const data = await res.json();
+        if (res.ok) {
+          alert("Nouveau collaborateur ajouté !");
+          hideAddMemberModal();
+          loadTeamMembers();
+          ['modal-member-email', 'modal-member-pass', 'modal-member-fname', 'modal-member-lname', 'modal-member-dept'].forEach(id => {
+             const el = document.getElementById(id);
+             if(el) el.value = '';
+          });
+        } else { alert(data.error || "Erreur."); }
+      } catch (e) { alert("Erreur serveur."); }
+    }
+
+    let searchTimeout = null;
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentSearch = document.getElementById('member-search').value;
+        currentPage = 1;
+        loadTeamMembers();
+      }, 500);
     }
 
     async function loadTeamMembers() {
       const token = localStorage.getItem('ocuflow_token');
       try {
-        const res = await fetch(`${API_BASE}/auth/team/members`, {
+        const res = await fetch(`${API_BASE}/auth/team/members?page=${currentPage}&search=${encodeURIComponent(currentSearch)}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.ok) {
-          const members = await res.json();
-          const list = document.getElementById('team-members-list-new');
-          document.getElementById('team-total-members').textContent = members.length;
-          document.getElementById('team-total-sessions').textContent = members.reduce((acc, m) => acc + (m.sessions_count || 0), 0);
-          
-          if (members.length === 0) list.innerHTML = `<div style="padding:20px; color:var(--muted);">Aucun membre.</div>`;
-          else list.innerHTML = members.map(m => `
-            <div class="member-row">
-              <div class="member-info">
-                <div class="member-avatar">${m.email[0].toUpperCase()}</div>
-                <div><div style="font-weight:700;">${m.email}</div><div style="font-size:0.7rem;color:var(--muted);">LVL ${m.level} • ${m.xp} XP</div></div>
-              </div>
-              <button onclick="exportMemberPDF('${m.email}')" class="btn btn-ghost" style="font-size:0.6rem;">Rapport</button>
-            </div>
-          `).join('');
+        const data = await res.json();
+        if (res.ok && data.members) {
+          renderMembersTable(data.members);
+          if (data.pagination) updatePagination(data.pagination);
+          const membersCountEl = document.getElementById('team-total-members');
+          if(membersCountEl && data.pagination) membersCountEl.textContent = data.pagination.total;
         }
-      } catch(e) { console.error(e); }
+      } catch (e) { console.error('Team members load error:', e); }
+    }
+
+    function renderMembersTable(members) {
+      const tbody = document.getElementById('team-members-list-body');
+      if (!tbody) return;
+      if (!members || members.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--muted);">Aucun membre.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = members.map(m => `
+        <tr class="team-row">
+          <td>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:32px; height:32px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.75rem; color:white;">
+                ${(m.first_name?.[0] || m.email[0]).toUpperCase()}
+              </div>
+              <div>
+                <div style="font-weight:700;">${m.first_name || ''} ${m.last_name || ''}</div>
+                <div style="font-size:0.7rem; color:var(--muted);">${m.email}</div>
+              </div>
+            </div>
+          </td>
+          <td style="color:var(--muted);">${m.department || '—'}</td>
+          <td><span class="level-badge">LVL ${m.level || 1}</span></td>
+          <td style="font-weight:700; color:${m.avg_health > 70 ? '#10b981' : (m.avg_health > 40 ? '#f59e0b' : '#ef4444')};">
+            ${m.avg_health ? Math.round(m.avg_health) + '%' : '—'}
+          </td>
+          <td style="color:var(--muted);">${m.sessions_count || 0} séances</td>
+          <td style="text-align:right;">
+            <button onclick="deleteMember(${m.id})" class="btn btn-ghost" style="padding:6px; color:#ef4444 !important; border-color:rgba(239,68,68,0.2) !important;">✕</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updatePagination(p) {
+      const infoEl = document.getElementById('pagination-info');
+      const prevEl = document.getElementById('prev-page');
+      const nextEl = document.getElementById('next-page');
+      if(infoEl) infoEl.textContent = `Page ${p.page} sur ${p.totalPages || 1}`;
+      if(prevEl) prevEl.disabled = p.page <= 1;
+      if(nextEl) nextEl.disabled = p.page >= p.totalPages;
+    }
+
+    function changePage(dir) { currentPage += dir; loadTeamMembers(); }
+
+    async function deleteMember(id) {
+      if (!confirm("Supprimer ce collaborateur ?")) return;
+      const token = localStorage.getItem('ocuflow_token');
+      try {
+        const res = await fetch(`${API_BASE}/auth/team/members/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) loadTeamMembers();
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadTeamSettings() {
+      const token = localStorage.getItem('ocuflow_token');
+      try {
+        const res = await fetch(`${API_BASE}/auth/team/settings`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          teamSettings = { fixedTimes: data.fixedTimes || [], days: data.days || [1,2,3,4,5] };
+          renderTeamSettings();
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function renderTeamSettings() {
+      const list = document.getElementById('team-fixed-times');
+      if (!list) return;
+      list.innerHTML = '';
+      teamSettings.fixedTimes.forEach(t => {
+        const chip = document.createElement('span');
+        chip.className = 'level-badge';
+        chip.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid var(--border); padding:8px 14px; cursor:pointer; font-size:0.8rem; height:auto;';
+        chip.innerHTML = `${t} <span style="margin-left:8px; opacity:0.4;">✕</span>`;
+        chip.onclick = () => {
+          teamSettings.fixedTimes = teamSettings.fixedTimes.filter(x => x !== t);
+          renderTeamSettings();
+        };
+        list.appendChild(chip);
+      });
+
+      document.querySelectorAll('.day-toggle').forEach(btn => {
+        const day = parseInt(btn.dataset.day);
+        const isActive = teamSettings.days.includes(day);
+        btn.classList.toggle('active', isActive);
+        btn.onclick = () => {
+          if (teamSettings.days.includes(day)) teamSettings.days = teamSettings.days.filter(d => d !== day);
+          else teamSettings.days.push(day);
+          renderTeamSettings();
+        };
+      });
+    }
+
+    function addTeamTime() {
+      const input = document.getElementById('add-team-time');
+      if (input && input.value && !teamSettings.fixedTimes.includes(input.value)) {
+        teamSettings.fixedTimes.push(input.value);
+        teamSettings.fixedTimes.sort();
+        renderTeamSettings();
+        input.value = '';
+      }
+    }
+
+    async function saveTeamSettings() {
+      const token = localStorage.getItem('ocuflow_token');
+      try {
+        const res = await fetch(`${API_BASE}/auth/team/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ settings: teamSettings })
+        });
+        if (res.ok) alert("🚀 Rappels d'équipe enregistrés avec succès !");
+      } catch (e) { alert("Erreur sauvegarde."); }
+    }
+
+    async function submitTestimonial() {
+      const content = document.getElementById('testimonial-text').value;
+      const token = localStorage.getItem('ocuflow_token');
+      if (!content || content.length < 5) { alert("Avis trop court."); return; }
+      try {
+        const res = await fetch(`${API_BASE}/auth/testimonials`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ content })
+        });
+        if (res.ok) { alert("Merci ! Votre avis a été envoyé."); document.getElementById('testimonial-text').value = ''; }
+        else { const d = await res.json(); alert(d.error); }
+      } catch (e) { console.error(e); }
     }
 
     window.exportMemberPDF = (email) => {
@@ -631,75 +984,164 @@
       localStorage.removeItem('ocuflow_token'); localStorage.removeItem('ocuflow_user'); window.location.href = 'index.html';
     };
 
-    // TEAM SETTINGS LOGIC
+    let currentPage = 1;
+    let currentSearch = '';
     let teamSettings = { fixedTimes: [], days: [1,2,3,4,5] };
 
-    async function loadTeamSettings() {
-      const token = localStorage.getItem('ocuflow_token');
-      try {
-        const res = await fetch(`${API_BASE}/auth/team/settings`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (data && data.fixedTimes) teamSettings = data;
-        renderTeamSettings();
-      } catch(e) { console.error(e); }
-    }
+    // ── ROUTINES CRUD ────────────────────────────────────────────────────────
+    let currentEditingId = null;
+    let selectedExs = [];
 
-    function renderTeamSettings() {
-      const list = document.getElementById('team-fixed-times');
-      list.innerHTML = '';
-      teamSettings.fixedTimes.forEach(t => {
-        const chip = document.createElement('span');
-        chip.className = 'lvl-badge';
-        chip.style.background = 'rgba(255,255,255,0.05)';
-        chip.style.border = '1px solid var(--border)';
-        chip.style.padding = '4px 10px';
-        chip.style.cursor = 'pointer';
-        chip.innerHTML = `${t} <span style="margin-left:5px; opacity:0.5;">✕</span>`;
-        chip.onclick = () => {
-          teamSettings.fixedTimes = teamSettings.fixedTimes.filter(x => x !== t);
-          renderTeamSettings();
-        };
-        list.appendChild(chip);
-      });
-
-      document.querySelectorAll('.day-toggle').forEach(btn => {
-        btn.classList.toggle('active', teamSettings.days.includes(parseInt(btn.dataset.day)));
-        btn.onclick = () => {
-          const day = parseInt(btn.dataset.day);
-          if (teamSettings.days.includes(day)) {
-            teamSettings.days = teamSettings.days.filter(d => d !== day);
-          } else {
-            teamSettings.days.push(day);
-          }
-          renderTeamSettings();
-        };
+    function renderRoutinesList() {
+      const container = document.getElementById('routines-list');
+      if (!container) return;
+      container.innerHTML = '';
+      const routines = StorageManager.getRoutines();
+      routines.forEach(r => {
+        const isCustom = !isNaN(r.id) || (typeof r.id === 'string' && r.id.startsWith('custom_'));
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;align-items:center;gap:16px;padding:20px;background:var(--panel);border:1px solid var(--border);border-radius:18px;transition:0.2s;';
+        div.onmouseenter = () => { div.style.borderColor = 'var(--accent)'; div.style.transform = 'translateX(4px)'; };
+        div.onmouseleave = () => { div.style.borderColor = 'var(--border)'; div.style.transform = 'none'; };
+        div.innerHTML = `
+          <span style="font-size:1.8rem;">${r.icon || '🎯'}</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.9rem;color:white;">${r.name}</div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">${r.desc || ''}</div>
+            <div style="font-size:0.6rem;color:var(--accent);margin-top:4px;">${(r.exs || []).length} exercices · ${r.dur || 120}s</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="editRoutine('${r.id}')" class="btn btn-ghost" style="padding:8px 12px;width:auto;font-size:0.75rem;">✏️ Modifier</button>
+            ${isCustom ? `<button onclick="confirmDeleteRoutine('${r.id}')" class="btn btn-ghost" style="padding:8px 12px;width:auto;font-size:0.75rem;color:#ff5252 !important;border-color:rgba(239,68,68,0.2) !important;">🗑️</button>` : ''}
+          </div>
+        `;
+        container.appendChild(div);
       });
     }
 
-    document.getElementById('add-team-time').onchange = (e) => {
-      const val = e.target.value;
-      if (val && !teamSettings.fixedTimes.includes(val)) {
-        teamSettings.fixedTimes.push(val);
-        teamSettings.fixedTimes.sort();
-        renderTeamSettings();
+    function createNewRoutine() {
+      const id = 'custom_' + Date.now();
+      currentEditingId = id;
+      selectedExs = [];
+      document.getElementById('edit-name').value = 'Ma Routine';
+      document.getElementById('edit-desc').value = '';
+      document.getElementById('edit-dur').value = 120;
+      renderExSelectorEditor();
+      document.getElementById('routine-editor').style.display = 'block';
+      document.getElementById('routine-editor').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function editRoutine(id) {
+      const routines = StorageManager.getRoutines();
+      let r = routines.find(x => x.id == id);
+      if (!r) r = { id, name: 'Ma Routine', desc: '', dur: 120, exs: [] };
+      currentEditingId = id;
+      selectedExs = [...(r.exs || [])];
+      document.getElementById('edit-name').value = r.name;
+      document.getElementById('edit-desc').value = r.desc || '';
+      document.getElementById('edit-dur').value = r.dur || 120;
+      renderExSelectorEditor();
+      document.getElementById('routine-editor').style.display = 'block';
+      document.getElementById('routine-editor').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderExSelectorEditor() {
+      const container = document.getElementById('edit-ex-selector');
+      if (!container || typeof MOVEMENTS_DATA === 'undefined') return;
+      container.innerHTML = '';
+      MOVEMENTS_DATA.forEach(m => {
+        const div = document.createElement('div');
+        const isActive = selectedExs.includes(m.id);
+        div.style.cssText = `padding:10px;border-radius:10px;border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};background:${isActive ? 'rgba(0,229,255,0.1)' : 'var(--surface)'};font-size:0.7rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;color:${isActive ? 'var(--accent)' : 'var(--muted)'};`;
+        div.innerHTML = `<span style="font-size:1.1rem;">${m.icon}</span> ${m.name}`;
+        div.onclick = () => {
+          if (selectedExs.includes(m.id)) selectedExs = selectedExs.filter(x => x !== m.id);
+          else selectedExs.push(m.id);
+          renderExSelectorEditor();
+        };
+        container.appendChild(div);
+      });
+    }
+
+    async function saveCurrentRoutine() {
+      const name = document.getElementById('edit-name').value;
+      const desc = document.getElementById('edit-desc').value;
+      const dur = parseInt(document.getElementById('edit-dur').value);
+      if (!name || selectedExs.length === 0) { alert('Veuillez donner un nom et choisir au moins 1 exercice.'); return; }
+      await StorageManager.saveRoutine({ id: currentEditingId, name, desc, dur, exs: selectedExs, icon: '🎯' });
+      closeRoutineEditor();
+      renderRoutinesList();
+    }
+
+    function closeRoutineEditor() {
+      document.getElementById('routine-editor').style.display = 'none';
+    }
+
+    function confirmDeleteRoutine(id) {
+      if (confirm('Supprimer cette routine ?')) {
+        StorageManager.deleteRoutine(id);
+        renderRoutinesList();
       }
+    }
+
+    function handleSpecialClick() {
+      const user = JSON.parse(localStorage.getItem('ocuflow_user') || '{}');
+      const plan = user.plan_type || 'free';
+      if (plan === 'free') {
+        alert('🔒 Les Exercices Spéciaux sont réservés aux abonnés Premium et Pro.\n\nMettez à jour votre forfait pour y accéder !');
+        window.location.href = 'index.html#pricing';
+      } else {
+        window.location.href = 'special-training.html';
+      }
+    }
+
+    // Refresh routines on tab switch
+    const origSwitchTab = switchTab;
+    switchTab = function(tabId) {
+      origSwitchTab(tabId);
+      if (tabId === 'routines') renderRoutinesList();
     };
 
-    async function saveTeamSettings() {
-      const token = localStorage.getItem('ocuflow_token');
-      try {
-        const res = await fetch(`${API_BASE}/auth/team/settings`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ settings: teamSettings })
-        });
-        if (res.ok) alert("Rappels d'équipe enregistrés !");
-      } catch(e) { console.error(e); }
-    }
-
     initDashboard();
+    renderRoutinesList();
   </script>
+
+  <div id="add-member-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:4000; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:var(--admin-sidebar,#1e293b); width:100%; max-width:550px; padding:40px; border-radius:30px; border:1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+      <h2 style="margin-bottom:8px; font-family:'Outfit';">Nouveau Collaborateur</h2>
+      <p style="color:var(--muted); font-size:0.85rem; margin-bottom:32px;">Ajoutez un membre à votre équipe OcuFlow PRO.</p>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+        <div style="grid-column: span 1;">
+          <label style="display:block; font-size:0.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:8px; font-weight:700;">Prénom</label>
+          <input type="text" id="modal-member-fname" placeholder="Jean" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:12px; color:white;">
+        </div>
+        <div style="grid-column: span 1;">
+          <label style="display:block; font-size:0.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:8px; font-weight:700;">Nom</label>
+          <input type="text" id="modal-member-lname" placeholder="Dupont" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:12px; color:white;">
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:0.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:8px; font-weight:700;">Service / Département</label>
+        <input type="text" id="modal-member-dept" placeholder="Ex: Marketing, IT, RH..." style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:12px; color:white;">
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:0.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:8px; font-weight:700;">Email Professionnel</label>
+        <input type="email" id="modal-member-email" placeholder="jean.dupont@entreprise.com" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:12px; color:white;">
+      </div>
+
+      <div style="margin-bottom:32px;">
+        <label style="display:block; font-size:0.7rem; color:var(--muted); text-transform:uppercase; margin-bottom:8px; font-weight:700;">Mot de passe initial</label>
+        <input type="password" id="modal-member-pass" placeholder="••••••••" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:12px; padding:12px; color:white;">
+      </div>
+
+      <div style="display:flex; gap:12px;">
+        <button class="btn btn-primary" onclick="addTeamMember()" style="flex:2; padding:16px;">Créer le compte</button>
+        <button class="btn btn-ghost" onclick="hideAddMemberModal()" style="flex:1; padding:16px;">Annuler</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
