@@ -13,7 +13,7 @@ async function checkExpiredSubscriptions() {
   
   try {
     // 1. Trouver les abonnements expirés encore "actifs"
-    const [expired] = await db.query(
+    const { rows: expired } = await db.query(
       `SELECT s.id, s.user_id, s.plan_type, s.end_date 
        FROM subscriptions s 
        WHERE s.status = 'active' AND s.end_date < NOW()`
@@ -34,7 +34,7 @@ async function checkExpiredSubscriptions() {
       );
 
       // 3. Vérifier si l'utilisateur a un autre abonnement actif
-      const [otherActive] = await db.query(
+      const { rows: otherActive } = await db.query(
         'SELECT id FROM subscriptions WHERE user_id = ? AND status = ? AND id != ?',
         [sub.user_id, 'active', sub.id]
       );

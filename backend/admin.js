@@ -14,7 +14,21 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => cb(null, `logo-${Date.now()}${path.extname(file.originalname)}`)
 });
-const upload = multer({ storage });
+
+// Filtre MIME : uniquement les images
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Seuls les fichiers image sont acceptés (jpg, png, webp, svg...).'), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 2 * 1024 * 1024 } // 2 MB max
+});
 
 console.log("[Admin] Initializing Admin Routes...");
 

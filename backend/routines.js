@@ -26,7 +26,6 @@ router.post('/', auth, async (req, res) => {
   }
 
   try {
-    let result;
     // Si un ID numérique est fourni, on tente une mise à jour
     if (id && !isNaN(id)) {
       await db.query(
@@ -45,25 +44,26 @@ router.post('/', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur lors de l\'enregistrement de la routine.' });
-    }
-    });
+  }
+});
 
-    // SUPPRIMER UNE ROUTINE
-    router.delete('/:id', auth, async (req, res) => {
-    const { id } = req.params;
-    try {
+// SUPPRIMER UNE ROUTINE
+router.delete('/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  try {
     const result = await db.query(
       'DELETE FROM user_routines WHERE id = ? AND user_id = ?',
       [id, req.user.id]
     );
+    // result.rows est le ResultSetHeader pour les DELETE (mysql2)
     if (result.rows.affectedRows === 0) {
       return res.status(404).json({ error: 'Routine non trouvée ou non autorisée.' });
     }
     res.json({ message: 'Routine supprimée avec succès.' });
-    } catch (err) {
+  } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erreur lors de l\'suppression de la routine.' });
-    }
-    });
+    res.status(500).json({ error: 'Erreur lors de la suppression de la routine.' });
+  }
+});
 
 module.exports = router;

@@ -1,13 +1,14 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('./db');
 const auth = require('./middleware/auth');
 const router = express.Router();
 
 const { sendEmail } = require('./utils/email');
 
-const SECRET_KEY = process.env.JWT_SECRET || 'votre_cle_secrete_super_sure';
+const SECRET_KEY = process.env.JWT_SECRET;
 
 // INSCRIPTION
 router.post('/register', async (req, res) => {
@@ -15,6 +16,11 @@ router.post('/register', async (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email et mot de passe requis.' });
+  }
+
+  // Validation du mot de passe (min 8 caractères)
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
   }
 
   try {
@@ -51,89 +57,8 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// AJOUTER UN MEMBRE DE L'ÉQUIPE (PRO UNIQUEMENT)
-router.post('/team/add', auth, async (req, res) => {
-  const { email, password } = req.body;
-  const masterId = req.user?.id; // Authenitfied via middleware later?
 
-  // Mocking auth middleware check for now or assuming it's part of the master's request
-  if (!masterId) return res.status(401).json({ error: 'Non autorisé.' });
 
-  try {
-    const master = await db.query('SELECT plan_type FROM users WHERE id = ?', [masterId]);
-    if (master.rows[0].plan_type !== 'pro') {
-      return res.status(403).json({ error: 'Réservé aux comptes PRO.' });
-    }
-
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(password, saltRounds);
-
-    const insertResult = await db.query(
-      'INSERT INTO users (email, password_hash, parent_id, is_premium, plan_type) VALUES (?, ?, ?, ?, ?)',
-      [email, passwordHash, masterId, true, 'pro']
-    );
-
-    res.status(201).json({ message: 'Membre ajouté avec succès !' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de l\'ajout du membre.' });
-  }
-});
-
-// LISTER LES MEMBRES DE L'ÉQUIPE
-router.get('/team/members', auth, async (req, res) => {
-  const masterId = req.user?.id;
-  try {
-    const result = await db.query(
-      'SELECT id, email, xp, level, created_at, last_login FROM users WHERE parent_id = ?', 
-      [masterId]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la récupération des membres.' });
-  }
-});
-
-// RÉCUPÉRER LES RÉGLAGES DU CLUB (PRO)
-router.get('/team/settings', auth, async (req, res) => {
-  const masterId = req.user.parent_id || req.user.id;
-  try {
-    const result = await db.query('SELECT settings FROM clubs WHERE owner_id = ?', [masterId]);
-    if (result.rows.length > 0) {
-      res.json(result.rows[0].settings || {});
-    } else {
-      res.json({});
-    }
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la récupération des réglages.' });
-  }
-});
-
-// METTRE À JOUR LES RÉGLAGES DU CLUB (PRO OWNER UNIQUEMENT)
-router.post('/team/settings', auth, async (req, res) => {
-  const masterId = req.user.id;
-  const { settings } = req.body;
-  try {
-    const result = await db.query('UPDATE clubs SET settings = ? WHERE owner_id = ?', [JSON.stringify(settings), masterId]);
-    if (result.rows.affectedRows > 0) {
-      res.json({ message: 'Réglages mis à jour.' });
-    } else {
-      res.status(403).json({ error: 'Non autorisé ou club non trouvé.' });
-    }
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de la mise à jour.' });
-  }
-});
-
-// SOUMETTRE UN AVIS (UTILISATEUR CONNECTÉ)
-router.post('/testimonials', auth, async (req, res) => {
-  const { content } = req.body;
-  try {
-    await db.query('INSERT INTO testimonials (user_id, content, status) VALUES (?, ?, \'pending\')', [req.user.id, content]);
-    res.status(201).json({ message: 'Merci ! Votre avis est en cours de modération.' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erreur lors de l\'envoi de l\'avis.' });
-  }
-});
 
 // MOT DE PASSE OUBLIÉ (ENVOI CODE)
 router.post('/forgot-password', async (req, res) => {
@@ -142,7 +67,7 @@ router.post('/forgot-password', async (req, res) => {
     const user = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (user.rows.length === 0) return res.json({ message: 'Si cet email existe, un code a été envoyé.' });
 
-    const token = Math.floor(100000 + Math.random() * 900000).toString(); // Code à 6 chiffres
+    const token = crypto.randomBytes(6).toString('hex'); // Token hex de 12 chars (~281T combinaisons)
     await db.query('DELETE FROM password_resets WHERE email = ?', [email]);
     await db.query('INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))', [email, token]);
 
@@ -277,8 +202,7 @@ router.post('/team/add', auth, async (req, res) => {
       return res.status(409).json({ error: 'Cet email est déjà utilisé.' });
     }
 
-    // Créer le membre
-    const bcrypt = require('bcryptjs');
+    // Créer le membre (bcrypt importé en tête de fichier)
     const hash = await bcrypt.hash(password, 10);
     const result = await db.query(
       'INSERT INTO users (email, password_hash, first_name, last_name, department, parent_id, role, plan_type, is_premium, xp, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, 1)',
@@ -287,7 +211,7 @@ router.post('/team/add', auth, async (req, res) => {
 
     res.status(201).json({ 
       message: 'Membre ajouté avec succès.',
-      member: { id: result.insertId, email, first_name, last_name, department }
+      member: { id: result.rows.insertId, email, first_name, last_name, department }
     });
   } catch (err) {
     console.error('Team add error:', err);

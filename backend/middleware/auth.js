@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const SECRET_KEY = process.env.JWT_SECRET || 'votre_cle_secrete_super_sure';
+if (!process.env.JWT_SECRET) throw new Error('FATAL: JWT_SECRET non défini dans .env');
+const SECRET_KEY = process.env.JWT_SECRET;
 
 module.exports = (req, res, next) => {
   const token = req.header('Authorization');

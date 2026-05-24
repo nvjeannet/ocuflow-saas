@@ -61,7 +61,16 @@ const authLimiter = rateLimit({
   message: { error: 'Trop de requêtes, veuillez réessayer dans 15 minutes.' }
 });
 
+// LIMITATION TRÈS STRICTE pour le reset de mot de passe (anti brute-force)
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { error: 'Trop de tentatives. Veuillez réessayer dans 15 minutes.' }
+});
+
 // AUTH (Avec rate limiter)
+app.use('/api/auth/forgot-password', resetLimiter);
+app.use('/api/auth/reset-password', resetLimiter);
 app.use('/api/auth', authLimiter, authRoutes);
 
 // AUTRES ROUTES
