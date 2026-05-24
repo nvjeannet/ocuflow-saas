@@ -1,0 +1,62 @@
+name: Deploy OcuFlow SaaS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run Audit Unit Tests
+        run: |
+          cd backend
+          # On crée un faux .env de test pour valider la structure sans exposer les vrais secrets
+          echo "JWT_SECRET=temporary_test_secret_for_ci_pipeline_verification" > .env
+          echo "MONEROO_SECRET=temporary_test_moneroo_secret_for_ci" >> .env
+          node test_audit.js
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to Hostinger VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || 22 }}
+          script: |
+            # Aller dans le répertoire de l'application
+            cd /var/www/ocuflow-saas
+
+            # Mettre à jour le code depuis Git
+            git pull origin main
+
+            # Installer les dépendances du backend (uniquement production)
+            cd backend
+            npm install --omit=dev
+
+            # Lancer les migrations de base de données
+            npm run migrate
+
+            # Redémarrer l'application avec PM2
+            pm2 reload ocuflow-api --update-env

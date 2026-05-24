@@ -20,13 +20,14 @@ test('BUG-001 JWT_SECRET présent et long',
   process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32,
   'JWT_SECRET trop court ou absent');
 test('BUG-001 JWT_SECRET pas un placeholder', 
-  !process.env.JWT_SECRET.includes('CHANGE_ME'),
+  process.env.JWT_SECRET && !process.env.JWT_SECRET.includes('CHANGE_ME'),
   'JWT_SECRET est encore un placeholder');
-console.log('       JWT_SECRET:', process.env.JWT_SECRET.slice(0,8) + '...');
+console.log('       JWT_SECRET:', process.env.JWT_SECRET ? process.env.JWT_SECRET.slice(0,8) + '...' : 'Absent');
 
 // Test 2: JWT sign/verify
-const token = jwt.sign({ id: 1, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '1h' });
-const decoded = jwt.verify(token, process.env.JWT_SECRET);
+const testSecret = process.env.JWT_SECRET || 'test_fallback_secret_only_for_jwt_verification';
+const token = jwt.sign({ id: 1, role: 'user' }, testSecret, { expiresIn: '1h' });
+const decoded = jwt.verify(token, testSecret);
 test('BUG-001 JWT sign/verify fonctionne', decoded.id === 1, 'JWT decode KO');
 
 // Test 3: crypto pour reset token
